@@ -2,8 +2,7 @@ import express, { Request, Response, Application, NextFunction } from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { print } from 'listening-on';
-import sqlite3 from 'sqlite3';
-import { open, Database } from 'sqlite';
+import mysql from 'mysql2/promise';
 import bcrypt from 'bcrypt';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
@@ -37,7 +36,7 @@ interface AuthRequest extends Request {
 
 app.use(morgan('dev'));
 app.use(cors());
-app.use(express.static(path.join(__dirname, 'public'), {
+app.use(express.static(path.join(__dirname, '../public'), {
   index: false,
   setHeaders: (res, filePath) => {
     console.log(`Serving static file: ${filePath}`);
@@ -46,82 +45,101 @@ app.use(express.static(path.join(__dirname, 'public'), {
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json({ limit: '10mb' }));
 
-let db: Database | null = null;
-async function initDb(): Promise<Database> {
+let db: mysql.Pool | null = null;
+async function initDb(): Promise<mysql.Pool> {
   if (db) return db;
   try {
-    db = await open({
-      filename: './database.db',
-      driver: sqlite3.Database,
+    db = await mysql.createPool({
+      host: process.env.DB_HOST || 'localhost',
+      user: process.env.DB_USER || 'app_user',
+      password: process.env.DB_PASSWORD || 'your_secure_password',
+      database: process.env.DB_NAME || 'family_app',
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0
     });
-    console.log('Database connected');
-    await db.exec(`
+    console.log('MySQL connected');
+
+    // Create tables one by one to ensure correct order for foreign key dependencies
+    await db.query(`
       CREATE TABLE IF NOT EXISTS user (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL CHECK(length(username) <= 32),
-        password TEXT NOT NULL,
+        id INTEGER PRIMARY KEY AUTO_INCREMENT,
+        username VARCHAR(32) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
         avatar TEXT,
-        email TEXT UNIQUE
-      );
+        email VARCHAR(255) UNIQUE
+      )
+    `);
 
+    await db.query(`
       CREATE TABLE IF NOT EXISTS family (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL CHECK(length(name) <= 100),
+        id INTEGER PRIMARY KEY AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
         owner_id INTEGER NOT NULL,
-        FOREIGN KEY (owner_id) REFERENCES user(id)
-      );
+        FOREIGN KEY (owner_id) REFERENCES user(id) ON DELETE CASCADE
+      )
+    `);
 
+    await db.query(`
       CREATE TABLE IF NOT EXISTS family_member (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY AUTO_INCREMENT,
         family_id INTEGER NOT NULL,
         user_id INTEGER NOT NULL,
-        role TEXT NOT NULL DEFAULT 'member' CHECK(length(role) <= 20),
-        FOREIGN KEY (family_id) REFERENCES family(id),
-        FOREIGN KEY (user_id) REFERENCES user(id)
-      );
+        role VARCHAR(20) NOT NULL DEFAULT 'member',
+        FOREIGN KEY (family_id) REFERENCES family(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
+      )
+    `);
 
+    await db.query(`
       CREATE TABLE IF NOT EXISTS event (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY AUTO_INCREMENT,
         family_id INTEGER NOT NULL,
         creator_id INTEGER NOT NULL,
-        title TEXT NOT NULL CHECK(length(title) <= 100),
-        start_datetime TEXT NOT NULL,
-        end_datetime TEXT,
-        reminder_datetime TEXT,
-        created_at TEXT NOT NULL,
-        FOREIGN KEY (family_id) REFERENCES family(id),
-        FOREIGN KEY (creator_id) REFERENCES user(id)
-      );
+        title VARCHAR(100) NOT NULL,
+        start_datetime DATETIME NOT NULL,
+        end_datetime DATETIME,
+        reminder_datetime DATETIME,
+        created_at DATETIME NOT NULL,
+        FOREIGN KEY (family_id) REFERENCES family(id) ON DELETE CASCADE,
+        FOREIGN KEY (creator_id) REFERENCES user(id) ON DELETE CASCADE
+      )
+    `);
 
+    await db.query(`
       CREATE TABLE IF NOT EXISTS task (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY AUTO_INCREMENT,
         family_id INTEGER NOT NULL,
         creator_id INTEGER NOT NULL,
         assignee_id INTEGER,
-        title TEXT NOT NULL CHECK(length(title) <= 100),
+        title VARCHAR(100) NOT NULL,
         description TEXT,
-        due_date TEXT,
-        priority TEXT NOT NULL DEFAULT 'medium' CHECK(priority IN ('low', 'medium', 'high')),
-        status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'completed')),
-        created_at TEXT NOT NULL,
-        FOREIGN KEY (family_id) REFERENCES family(id),
-        FOREIGN KEY (creator_id) REFERENCES user(id),
-        FOREIGN KEY (assignee_id) REFERENCES user(id)
-      );
+        due_date DATE,
+        priority ENUM('low', 'medium', 'high') NOT NULL DEFAULT 'medium',
+        status ENUM('pending', 'completed') NOT NULL DEFAULT 'pending',
+        created_at DATETIME NOT NULL,
+        FOREIGN KEY (family_id) REFERENCES family(id) ON DELETE CASCADE,
+        FOREIGN KEY (creator_id) REFERENCES user(id) ON DELETE CASCADE,
+        FOREIGN KEY (assignee_id) REFERENCES user(id) ON DELETE SET NULL
+      )
+    `);
 
+    await db.query(`
       CREATE TABLE IF NOT EXISTS message (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY AUTO_INCREMENT,
         family_id INTEGER NOT NULL,
         sender_id INTEGER NOT NULL,
-        content TEXT NOT NULL CHECK(length(content) <= 1000),
-        sent_at TEXT NOT NULL,
-        FOREIGN KEY (family_id) REFERENCES family(id),
-        FOREIGN KEY (sender_id) REFERENCES user(id)
-      );
+        content VARCHAR(1000) NOT NULL,
+        sent_at DATETIME NOT NULL,
+        FOREIGN KEY (family_id) REFERENCES family(id) ON DELETE CASCADE,
+        FOREIGN KEY (sender_id) REFERENCES user(id) ON DELETE CASCADE
+      )
     `);
+
+    console.log('All tables created successfully');
     return db;
   } catch (error) {
-    console.error('Database initialization error:', error);
+    console.error('MySQL initialization error:', error);
     throw error;
   }
 }
@@ -169,7 +187,8 @@ io.on('connection', async (socket) => {
 
   try {
     const db = await initDb();
-    const family = await db.get('SELECT family_id FROM family_member WHERE user_id = ?', [user.userId]);
+    const [rows] = await db.query<mysql.RowDataPacket[]>('SELECT family_id FROM family_member WHERE user_id = ?', [user.userId]);
+    const family = rows[0] as { family_id: number } | undefined;
     if (!family) {
       socket.emit('error', 'User not in a family');
       socket.disconnect();
@@ -179,7 +198,7 @@ io.on('connection', async (socket) => {
     socket.join(`family_${family.family_id}`);
     console.log(`User ${user.username} joined family_${family.family_id}`);
 
-    const messages = await db.all(
+    const [messages] = await db.query<mysql.RowDataPacket[]>(
       'SELECT m.id, m.content, m.sent_at, m.sender_id, u.username AS sender_username ' +
       'FROM message m JOIN user u ON m.sender_id = u.id WHERE m.family_id = ? ORDER BY m.sent_at ASC',
       [family.family_id]
@@ -191,12 +210,12 @@ io.on('connection', async (socket) => {
     socket.on('message', async (message) => {
       try {
         const sent_at = new Date().toISOString();
-        const result = await db.run(
+        const [result] = await db.query<mysql.ResultSetHeader>(
           'INSERT INTO message (family_id, sender_id, content, sent_at) VALUES (?, ?, ?, ?)',
           [family.family_id, user.userId, message.content, sent_at]
         );
         const savedMessage = {
-          id: result.lastID,
+          id: result.insertId,
           content: message.content,
           sent_at,
           sender_id: user.userId,
@@ -221,11 +240,11 @@ io.on('connection', async (socket) => {
   }
 });
 
-// Existing REST API Routes
+// REST API Routes
 app.get('/health', async (req: Request, res: Response) => {
   try {
     const db = await initDb();
-    await db.get('SELECT 1');
+    await db.query('SELECT 1');
     sendResponse(res, 200, true, { status: 'healthy' });
   } catch (error) {
     console.error('Health check error:', error);
@@ -238,7 +257,7 @@ app.get('/', async (req: Request, res: Response) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     console.log('No token provided, serving login.html');
-    return res.sendFile(path.join(__dirname, 'public', 'login.html'), (err) => {
+    return res.sendFile(path.join(__dirname, '../public', 'login.html'), (err) => {
       if (err) {
         console.error('Error serving login.html:', err);
         sendResponse(res, 500, false, null, 'Failed to load page');
@@ -250,7 +269,7 @@ app.get('/', async (req: Request, res: Response) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; username: string };
     console.log(`User ${decoded.username} authenticated, serving family.html`);
-    return res.sendFile(path.join(__dirname, 'public', 'family.html'), (err) => {
+    return res.sendFile(path.join(__dirname, '../public', 'family.html'), (err) => {
       if (err) {
         console.error('Error serving family.html:', err);
         sendResponse(res, 500, false, null, 'Failed to load page');
@@ -258,7 +277,7 @@ app.get('/', async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Token verification error, serving login.html:', error);
-    res.sendFile(path.join(__dirname, 'public', 'login.html'), (err) => {
+    res.sendFile(path.join(__dirname, '../public', 'login.html'), (err) => {
       if (err) {
         console.error('Error serving login.html:', err);
         sendResponse(res, 500, false, null, 'Failed to load page');
@@ -286,13 +305,13 @@ app.post('/register', async (req: Request, res: Response) => {
 
   try {
     const db = await initDb();
-    const existingUser = await db.get('SELECT id FROM user WHERE username = ? OR email = ?', [username, email || null]);
-    if (existingUser) {
+    const [existingUser] = await db.query('SELECT id FROM user WHERE username = ? OR email = ?', [username, email || null]);
+    if ((existingUser as any[]).length > 0) {
       return sendResponse(res, 409, false, null, 'Username or email already exists');
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    await db.run(
+    await db.query(
       'INSERT INTO user (username, password, avatar, email) VALUES (?, ?, NULL, ?)',
       [username, hashedPassword, email || null]
     );
@@ -312,7 +331,8 @@ app.post('/login', async (req: Request, res: Response) => {
   }
   try {
     const db = await initDb();
-    const user = await db.get('SELECT id, username, password FROM user WHERE username = ?', [username]);
+    const [rows] = await db.query('SELECT id, username, password FROM user WHERE username = ?', [username]);
+    const user = (rows as any[])[0];
     if (!user) {
       return sendResponse(res, 401, false, null, 'Invalid username');
     }
@@ -338,7 +358,8 @@ app.get('/user', authenticate, async (req: AuthRequest, res: Response) => {
   const user_id = req.user!.userId;
   try {
     const db = await initDb();
-    const user = await db.get('SELECT id, username, email, avatar FROM user WHERE id = ?', [user_id]);
+    const [rows] = await db.query('SELECT id, username, email, avatar FROM user WHERE id = ?', [user_id]);
+    const user = (rows as any[])[0];
     if (!user) {
       return sendResponse(res, 400, false, null, 'User not found');
     }
@@ -359,12 +380,12 @@ app.patch('/user/email', authenticate, async (req: AuthRequest, res: Response) =
 
   try {
     const db = await initDb();
-    const existingEmail = await db.get('SELECT id FROM user WHERE email = ? AND id != ?', [email, user_id]);
-    if (existingEmail) {
+    const [existingEmail] = await db.query('SELECT id FROM user WHERE email = ? AND id != ?', [email, user_id]);
+    if ((existingEmail as any[]).length > 0) {
       return sendResponse(res, 409, false, null, 'Email already in use');
     }
 
-    await db.run('UPDATE user SET email = ? WHERE id = ?', [email || null, user_id]);
+    await db.query('UPDATE user SET email = ? WHERE id = ?', [email || null, user_id]);
     console.log('Email updated:', { user_id, email });
     sendResponse(res, 200, true, { message: 'Email updated successfully' });
   } catch (error) {
@@ -383,22 +404,22 @@ app.post('/family', authenticate, async (req: AuthRequest, res: Response) => {
 
   try {
     const db = await initDb();
-    await db.run('BEGIN TRANSACTION');
+    await db.query('START TRANSACTION');
     try {
-      const existingFamily = await db.get('SELECT family_id FROM family_member WHERE user_id = ?', [user_id]);
+      const [existingFamily] = await db.query('SELECT family_id FROM family_member WHERE user_id = ?', [user_id]);
       console.log('Checked existing family for user:', { user_id, existingFamily });
-      if (existingFamily) {
+      if ((existingFamily as any[]).length > 0) {
         throw new Error('User is already in a family');
       }
 
-      const result = await db.run('INSERT INTO family (name, owner_id) VALUES (?, ?)', [name, user_id]);
-      const family_id = result.lastID;
-      await db.run('INSERT INTO family_member (family_id, user_id, role) VALUES (?, ?, ?)', [family_id, user_id, 'admin']);
-      await db.run('COMMIT');
+      const [result] = await db.query('INSERT INTO family (name, owner_id) VALUES (?, ?)', [name, user_id]);
+      const family_id = (result as any).insertId;
+      await db.query('INSERT INTO family_member (family_id, user_id, role) VALUES (?, ?, ?)', [family_id, user_id, 'admin']);
+      await db.query('COMMIT');
       console.log('Family created:', { family_id, name, owner_id: user_id });
       sendResponse(res, 201, true, { message: 'Family created', family_id });
     } catch (error) {
-      await db.run('ROLLBACK');
+      await db.query('ROLLBACK');
       throw error;
     }
   } catch (error: unknown) {
@@ -418,25 +439,25 @@ app.post('/family/join', authenticate, async (req: AuthRequest, res: Response) =
 
   try {
     const db = await initDb();
-    await db.run('BEGIN TRANSACTION');
+    await db.query('START TRANSACTION');
     try {
-      const family = await db.get('SELECT id FROM family WHERE id = ?', [family_id]);
-      if (!family) {
+      const [family] = await db.query('SELECT id FROM family WHERE id = ?', [family_id]);
+      if ((family as any[]).length === 0) {
         throw new Error('Family not found');
       }
 
-      const existingFamily = await db.get('SELECT family_id FROM family_member WHERE user_id = ?', [user_id]);
+      const [existingFamily] = await db.query('SELECT family_id FROM family_member WHERE user_id = ?', [user_id]);
       console.log('Checked existing family for join:', { user_id, existingFamily });
-      if (existingFamily) {
+      if ((existingFamily as any[]).length > 0) {
         throw new Error('User is already in a family');
       }
 
-      await db.run('INSERT INTO family_member (family_id, user_id, role) VALUES (?, ?, ?)', [family_id, user_id, 'member']);
-      await db.run('COMMIT');
+      await db.query('INSERT INTO family_member (family_id, user_id, role) VALUES (?, ?, ?)', [family_id, user_id, 'member']);
+      await db.query('COMMIT');
       console.log('User joined family:', { user_id, family_id });
       sendResponse(res, 200, true, { message: 'Joined family' });
     } catch (error) {
-      await db.run('ROLLBACK');
+      await db.query('ROLLBACK');
       throw error;
     }
   } catch (error: unknown) {
@@ -453,7 +474,7 @@ app.get('/my-families', authenticate, async (req: AuthRequest, res: Response) =>
   const user_id = req.user!.userId;
   try {
     const db = await initDb();
-    const families = await db.all(
+    const [families] = await db.query(
       `SELECT f.id, f.name, f.owner_id, fm.role
        FROM family f
        JOIN family_member fm ON f.id = fm.family_id
@@ -478,12 +499,12 @@ app.get('/family/members', authenticate, async (req: AuthRequest, res: Response)
 
   try {
     const db = await initDb();
-    const isMember = await db.get('SELECT user_id FROM family_member WHERE family_id = ? AND user_id = ?', [family_id, user_id]);
-    if (!isMember) {
+    const [isMember] = await db.query('SELECT user_id FROM family_member WHERE family_id = ? AND user_id = ?', [family_id, user_id]);
+    if ((isMember as any[]).length === 0) {
       return sendResponse(res, 403, false, null, 'User is not a member of this family');
     }
 
-    const members = await db.all(
+    const [members] = await db.query(
       `SELECT u.id AS user_id, u.username
        FROM family_member fm
        JOIN user u ON fm.user_id = u.id
@@ -502,13 +523,14 @@ app.get('/calendar', authenticate, async (req: AuthRequest, res: Response) => {
   const user_id = req.user!.userId;
   try {
     const db = await initDb();
-    const family = await db.get('SELECT family_id FROM family_member WHERE user_id = ?', [user_id]);
+    const [rows] = await db.query('SELECT family_id FROM family_member WHERE user_id = ?', [user_id]);
+    const family = (rows as any[])[0];
     if (!family) {
       console.log(`User ${user_id} not in a family, returning 403`);
       return sendResponse(res, 403, false, null, 'User not in a family');
     }
 
-    const events = await db.all(
+    const [events] = await db.query(
       'SELECT id, title, start_datetime, end_datetime, reminder_datetime, creator_id FROM event WHERE family_id = ?',
       [family.family_id]
     );
@@ -533,19 +555,20 @@ app.post('/calendar', authenticate, async (req: AuthRequest, res: Response) => {
 
   try {
     const db = await initDb();
-    const family = await db.get('SELECT family_id FROM family_member WHERE user_id = ?', [user_id]);
+    const [rows] = await db.query('SELECT family_id FROM family_member WHERE user_id = ?', [user_id]);
+    const family = (rows as any[])[0];
     if (!family) {
       console.log('User not in a family:', user_id);
       return sendResponse(res, 403, false, null, 'User not in a family');
     }
 
     const created_at = new Date().toISOString();
-    const result = await db.run(
+    const [result] = await db.query(
       'INSERT INTO event (family_id, creator_id, title, start_datetime, end_datetime, reminder_datetime, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [family.family_id, user_id, title, start_datetime, end_datetime || null, reminder_datetime || null, created_at]
     );
-    console.log('Event created:', { event_id: result.lastID, family_id: family.family_id });
-    sendResponse(res, 201, true, { message: 'Event created', event_id: result.lastID });
+    console.log('Event created:', { event_id: (result as any).insertId, family_id: family.family_id });
+    sendResponse(res, 201, true, { message: 'Event created', event_id: (result as any).insertId });
   } catch (error) {
     console.error('Create event error:', error);
     sendResponse(res, 500, false, null, 'Server error');
@@ -559,7 +582,8 @@ app.get('/tasks', authenticate, async (req: AuthRequest, res: Response) => {
 
   try {
     const db = await initDb();
-    const family = await db.get('SELECT family_id FROM family_member WHERE user_id = ?', [user_id]);
+    const [rows] = await db.query('SELECT family_id FROM family_member WHERE user_id = ?', [user_id]);
+    const family = (rows as any[])[0];
     if (!family) {
       console.log('User not in a family:', user_id);
       return sendResponse(res, 403, false, null, 'User not in a family');
@@ -587,7 +611,7 @@ app.get('/tasks', authenticate, async (req: AuthRequest, res: Response) => {
       }
     }
 
-    const tasks = await db.all(sql, params);
+    const [tasks] = await db.query(sql, params);
     console.log('Fetched tasks:', { family_id: family.family_id, tasks });
     sendResponse(res, 200, true, { tasks });
   } catch (error) {
@@ -609,31 +633,32 @@ app.post('/tasks', authenticate, async (req: AuthRequest, res: Response) => {
 
   try {
     const db = await initDb();
-    await db.run('BEGIN TRANSACTION');
+    await db.query('START TRANSACTION');
     try {
-      const family = await db.get('SELECT family_id FROM family_member WHERE user_id = ?', [user_id]);
+      const [rows] = await db.query('SELECT family_id FROM family_member WHERE user_id = ?', [user_id]);
+      const family = (rows as any[])[0];
       if (!family) {
         console.log('User not in a family:', user_id);
         throw new Error('User not in a family');
       }
 
       if (assignee_id) {
-        const exists = await db.get('SELECT user_id FROM family_member WHERE family_id = ? AND user_id = ?', [family.family_id, assignee_id]);
-        if (!exists) {
+        const [exists] = await db.query('SELECT user_id FROM family_member WHERE family_id = ? AND user_id = ?', [family.family_id, assignee_id]);
+        if ((exists as any[]).length === 0) {
           throw new Error('Assignee must be a family member');
         }
       }
 
       const created_at = new Date().toISOString();
-      const result = await db.run(
+      const [result] = await db.query(
         'INSERT INTO task (family_id, creator_id, assignee_id, title, description, due_date, priority, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [family.family_id, user_id, assignee_id || null, title, description || null, due_date || null, priority || 'medium', 'pending', created_at]
       );
-      await db.run('COMMIT');
-      console.log('Task created:', { task_id: result.lastID, family_id: family.family_id });
-      sendResponse(res, 201, true, { message: 'Task created', task_id: result.lastID });
+      await db.query('COMMIT');
+      console.log('Task created:', { task_id: (result as any).insertId, family_id: family.family_id });
+      sendResponse(res, 201, true, { message: 'Task created', task_id: (result as any).insertId });
     } catch (error) {
-      await db.run('ROLLBACK');
+      await db.query('ROLLBACK');
       throw error;
     }
   } catch (error: unknown) {
@@ -663,20 +688,21 @@ app.patch('/tasks/:id', authenticate, async (req: AuthRequest, res: Response) =>
 
   try {
     const db = await initDb();
-    const family = await db.get('SELECT family_id FROM family_member WHERE user_id = ?', [user_id]);
+    const [rows] = await db.query('SELECT family_id FROM family_member WHERE user_id = ?', [user_id]);
+    const family = (rows as any[])[0];
     if (!family) {
       console.log('User not in a family:', user_id);
       return sendResponse(res, 403, false, null, 'User not in a family');
     }
 
-    const task = await db.get('SELECT id FROM task WHERE id = ? AND family_id = ?', [task_id, family.family_id]);
-    if (!task) {
+    const [task] = await db.query('SELECT id FROM task WHERE id = ? AND family_id = ?', [task_id, family.family_id]);
+    if ((task as any[]).length === 0) {
       return sendResponse(res, 404, false, null, 'Task not found');
     }
 
     if (assignee_id) {
-      const exists = await db.get('SELECT user_id FROM family_member WHERE family_id = ? AND user_id = ?', [family.family_id, assignee_id]);
-      if (!exists) {
+      const [exists] = await db.query('SELECT user_id FROM family_member WHERE family_id = ? AND user_id = ?', [family.family_id, assignee_id]);
+      if ((exists as any[]).length === 0) {
         return sendResponse(res, 400, false, null, 'Assignee must be a family member');
       }
     }
@@ -695,7 +721,7 @@ app.patch('/tasks/:id', authenticate, async (req: AuthRequest, res: Response) =>
 
     const setClause = Object.keys(updates).map((key) => `${key} = ?`).join(', ');
     const values = [...Object.values(updates), task_id];
-    await db.run(`UPDATE task SET ${setClause} WHERE id = ?`, values);
+    await db.query(`UPDATE task SET ${setClause} WHERE id = ?`, values);
     console.log('Task updated:', { task_id, updates });
     sendResponse(res, 200, true, { message: 'Task updated' });
   } catch (error) {
@@ -710,18 +736,19 @@ app.delete('/tasks/:id', authenticate, async (req: AuthRequest, res: Response) =
 
   try {
     const db = await initDb();
-    const family = await db.get('SELECT family_id FROM family_member WHERE user_id = ?', [user_id]);
+    const [rows] = await db.query('SELECT family_id FROM family_member WHERE user_id = ?', [user_id]);
+    const family = (rows as any[])[0];
     if (!family) {
       console.log('User not in a family:', user_id);
       return sendResponse(res, 403, false, null, 'User not in a family');
     }
 
-    const task = await db.get('SELECT id FROM task WHERE id = ? AND family_id = ?', [task_id, family.family_id]);
-    if (!task) {
+    const [task] = await db.query('SELECT id FROM task WHERE id = ? AND family_id = ?', [task_id, family.family_id]);
+    if ((task as any[]).length === 0) {
       return sendResponse(res, 404, false, null, 'Task not found');
     }
 
-    await db.run('DELETE FROM task WHERE id = ?', [task_id]);
+    await db.query('DELETE FROM task WHERE id = ?', [task_id]);
     console.log('Task deleted:', { task_id });
     sendResponse(res, 200, true, { message: 'Task deleted' });
   } catch (error) {
@@ -734,13 +761,14 @@ app.get('/messages', authenticate, async (req: AuthRequest, res: Response) => {
   const user_id = req.user!.userId;
   try {
     const db = await initDb();
-    const family = await db.get('SELECT family_id FROM family_member WHERE user_id = ?', [user_id]);
+    const [rows] = await db.query('SELECT family_id FROM family_member WHERE user_id = ?', [user_id]);
+    const family = (rows as any[])[0];
     if (!family) {
       console.log('User not in a family:', user_id);
       return sendResponse(res, 403, false, null, 'User not in a family');
     }
 
-    const messages = await db.all(
+    const [messages] = await db.query(
       'SELECT m.id, m.content, m.sent_at, m.sender_id, u.username AS sender_username ' +
       'FROM message m JOIN user u ON m.sender_id = u.id WHERE m.family_id = ? ORDER BY m.sent_at ASC',
       [family.family_id]
@@ -763,19 +791,20 @@ app.post('/messages', authenticate, async (req: AuthRequest, res: Response) => {
 
   try {
     const db = await initDb();
-    const family = await db.get('SELECT family_id FROM family_member WHERE user_id = ?', [user_id]);
+    const [rows] = await db.query('SELECT family_id FROM family_member WHERE user_id = ?', [user_id]);
+    const family = (rows as any[])[0];
     if (!family) {
       console.log('User not in a family:', user_id);
       return sendResponse(res, 403, false, null, 'User not in a family');
     }
 
     const sent_at = new Date().toISOString();
-    const result = await db.run(
+    const [result] = await db.query(
       'INSERT INTO message (family_id, sender_id, content, sent_at) VALUES (?, ?, ?, ?)',
       [family.family_id, user_id, content, sent_at]
     );
-    console.log('Message sent:', { message_id: result.lastID, family_id: family.family_id });
-    sendResponse(res, 201, true, { message: 'Message sent', message_id: result.lastID });
+    console.log('Message sent:', { message_id: (result as any).insertId, family_id: family.family_id });
+    sendResponse(res, 201, true, { message: 'Message sent', message_id: (result as any).insertId });
   } catch (error) {
     console.error('Create message error:', error);
     sendResponse(res, 500, false, null, 'Server error');
