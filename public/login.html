@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>S&S Family App - Login</title>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/dist/ionic/ionic.esm.js"></script>
+    <script nomodule src="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/dist/ionic/ionic.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/css/ionic.bundle.min.css" />
+    <link rel="stylesheet" href="/styles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <ion-app>
+      <ion-content class="ion-padding">
+        <img src="/assets/family-logo.png" alt="Family Logo" class="family-logo" />
+        <ion-card>
+          <ion-card-header>
+            <ion-card-title>Login</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <form id="login_form">
+              <ion-list>
+                <ion-item>
+                  <ion-label position="floating">Username</ion-label>
+                  <ion-input id="username" name="username" type="text" required></ion-input>
+                  <div id="username_error" class="error" hidden>Username must be 3-32 characters</div>
+                </ion-item>
+                <ion-item>
+                  <ion-label position="floating">Password</ion-label>
+                  <ion-input id="password" name="password" type="password" required></ion-input>
+                  <div id="password_error" class="error" hidden>Password must be at least 6 characters</div>
+                  <ion-icon id="togglePassword" name="eye-outline" slot="end"></ion-icon>
+                </ion-item>
+                <ion-item lines="none">
+                  <ion-checkbox slot="start" name="remember"></ion-checkbox>
+                  <ion-label>Remember Me</ion-label>
+                </ion-item>
+              </ion-list>
+              <ion-button id="login_button" expand="block" type="submit">
+                Login
+                <ion-spinner name="crescent" hidden></ion-spinner>
+              </ion-button>
+              <p class="ion-text-center">
+                Don't have an account? <a href="/register.html">Register</a>
+              </p>
+            </form>
+          </ion-card-content>
+        </ion-card>
+      </ion-content>
+    </ion-app>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        console.log("DOM loaded for login.html");
+        console.log("Ionic version:", window.Ionic?.version || "Not loaded");
+
+        const loginForm = document.getElementById("login_form");
+        const usernameInput = document.getElementById("username");
+        const passwordInput = document.getElementById("password");
+        const togglePassword = document.getElementById("togglePassword");
+        const loginButton = document.getElementById("login_button");
+        const usernameError = document.getElementById("username_error");
+        const passwordError = document.getElementById("password_error");
+
+        // Toast 顯示輔助函數
+        async function showToast(message, duration, color) {
+          if (window.Ionic) {
+            const toast = document.createElement("ion-toast");
+            toast.message = message;
+            toast.duration = duration;
+            toast.color = color;
+            document.body.appendChild(toast);
+            await toast.present();
+          } else {
+            alert(message);
+          }
+        }
+
+        // Input validation
+        usernameInput?.addEventListener("input", () => {
+          const value = usernameInput.value.trim();
+          usernameError.hidden = value.length >= 3 && value.length <= 32;
+        });
+
+        passwordInput?.addEventListener("input", () => {
+          passwordError.hidden = passwordInput.value.length >= 6;
+        });
+
+        // Toggle password visibility
+        togglePassword?.addEventListener("click", () => {
+          const type = passwordInput.type === "password" ? "text" : "password";
+          passwordInput.type = type;
+          togglePassword.name = type === "password" ? "eye-outline" : "eye-off-outline";
+        });
+
+        // Form submission
+        loginForm?.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          console.log("Form submitted");
+          const formData = new FormData(loginForm);
+          const username = formData.get("username")?.toString().trim();
+          const password = formData.get("password")?.toString().trim();
+          const remember = formData.get("remember") === "on";
+
+          console.log("Login attempt:", { username, remember });
+
+          loginButton.disabled = true;
+          loginButton.querySelector("ion-spinner").hidden = false;
+
+          try {
+            const response = await fetch("http://localhost:8100/login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ username, password }),
+            });
+            const data = await response.json();
+            console.log("Login response:", data);
+
+            if (!data.success) {
+              throw new Error(data.error || "Login failed");
+            }
+
+            const token = data.data.token;
+            if (remember) {
+              localStorage.setItem("token", token);
+              sessionStorage.removeItem("token");
+              console.log("Token stored in localStorage");
+            } else {
+              sessionStorage.setItem("token", token);
+              localStorage.removeItem("token");
+              console.log("Token stored in sessionStorage");
+            }
+
+            await showToast("Login Successful", 2000, "success");
+            console.log("Redirecting to /family.html");
+            window.location.href = "/family.html";
+          } catch (error) {
+            console.error("Login error:", error.message);
+            await showToast(`Failed to login: ${error.message}`, 2000, "danger");
+          } finally {
+            loginButton.disabled = false;
+            loginButton.querySelector("ion-spinner").hidden = true;
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,104 @@
+:root {
+  --primary-pink: #FFC1CC; /* Soft pink for buttons and highlights */
+  --light-pink: #FFE4E1; /* Backgrounds and cards */
+  --dark-pink: #FF8A9B; /* Toolbar and accents */
+  --text-dark: #333333; /* Main text color */
+  --text-light: #FFFFFF; /* Text on dark backgrounds */
+  --family-font: 'Poppins', sans-serif; /* Playful, family-friendly font */
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
+}
+
+body {
+  font-family: var(--family-font);
+  background: var(--light-pink);
+}
+
+ion-app {
+  --background: var(--light-pink);
+}
+
+ion-toolbar {
+  --background: var(--dark-pink);
+  --color: var(--text-light);
+  --border-radius: 8px;
+}
+
+ion-content {
+  --background: var(--light-pink);
+}
+
+ion-card {
+  background: var(--text-light);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  margin: 16px auto;
+  max-width: 600px;
+  transition: transform 0.3s ease;
+}
+
+ion-card:hover {
+  transform: translateY(-4px);
+}
+
+ion-button {
+  --background: var(--primary-pink);
+  --color: var(--text-dark);
+  --border-radius: 12px;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  font-weight: 600;
+  text-transform: none;
+  transition: background 0.3s ease;
+}
+
+ion-button:hover {
+  --background: var(--dark-pink);
+  --color: var(--text-light);
+}
+
+ion-menu {
+  --background: var(--text-light);
+  --color: var(--text-dark);
+}
+
+ion-menu ion-item {
+  --background: var(--text-light);
+  --color: var(--text-dark);
+  --background-activated: var(--primary-pink);
+  --color-activated: var(--text-dark);
+  font-size: 16px;
+  border-radius: 8px;
+  margin: 8px;
+}
+
+ion-icon {
+  margin-right: 8px;
+}
+
+.family-logo {
+  display: block;
+  margin: 16px auto;
+  width: 100px;
+  height: auto;
+}
+
+.welcome-message {
+  text-align: center;
+  padding: 24px;
+  background: linear-gradient(135deg, var(--primary-pink), var(--light-pink));
+  border-radius: 12px;
+  margin: 16px;
+  color: var(--text-dark);
+}
+
+@media (max-width: 768px) {
+  ion-card {
+    max-width: 90%;
+  }
+  ion-menu ion-item {
+    font-size: 14px;
+  }
+  .welcome-message {
+    padding: 16px;
+  }
+}

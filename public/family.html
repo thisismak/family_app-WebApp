@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>S&S Family App - Family Management</title>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/dist/ionic/ionic.esm.js"></script>
+    <script nomodule src="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/dist/ionic/ionic.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/css/ionic.bundle.min.css" />
+    <link rel="stylesheet" href="/styles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+    <style>
+      ion-avatar {
+        width: 40px;
+        height: 40px;
+        margin-right: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <ion-app>
+      <ion-menu content-id="main-content" side="start">
+        <ion-header>
+          <ion-toolbar>
+            <ion-title>選單</ion-title>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content>
+          <ion-list>
+            <ion-item id="nav-dashboard"><ion-icon name="home-outline"></ion-icon>儀表板</ion-item>
+            <ion-item id="nav-calendar"><ion-icon name="calendar-outline"></ion-icon>日曆</ion-item>
+            <ion-item id="nav-tasks"><ion-icon name="checkbox-outline"></ion-icon>任務</ion-item>
+            <ion-item id="nav-chat"><ion-icon name="chatbubble-outline"></ion-icon>聊天</ion-item>
+            <ion-item id="nav-family"><ion-icon name="people-outline"></ion-icon>家庭</ion-item>
+            <ion-item id="signOut"><ion-icon name="log-out-outline"></ion-icon>登出</ion-item>
+          </ion-list>
+        </ion-content>
+      </ion-menu>
+      <div class="ion-page" id="main-content">
+        <ion-header>
+          <ion-toolbar>
+            <ion-buttons slot="start">
+              <ion-menu-button></ion-menu-button>
+            </ion-buttons>
+            <ion-title>S&S 家庭應用程式</ion-title>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content class="ion-padding">
+          <img src="/assets/family-logo.png" alt="家庭標誌" class="family-logo" />
+          <div class="welcome-message">
+            <h2>管理您的家庭</h2>
+            <p>用愛建立您的家庭圈。</p>
+          </div>
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>我的家庭</ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <ion-list id="family-list">
+                <ion-item>
+                  <ion-label>載入中...</ion-label>
+                </ion-item>
+              </ion-list>
+            </ion-card-content>
+          </ion-card>
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>創建家庭</ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <form id="create_family_form" class="ion-padding">
+                <ion-grid>
+                  <ion-row>
+                    <ion-col>
+                      <ion-item>
+                        <ion-input
+                          type="text"
+                          name="name"
+                          id="family_name"
+                          label="家庭名稱"
+                          placeholder="輸入家庭名稱"
+                          required
+                        ></ion-input>
+                      </ion-item>
+                    </ion-col>
+                  </ion-row>
+                  <ion-row>
+                    <ion-col>
+                      <ion-button expand="block" type="submit">創建家庭</ion-button>
+                    </ion-col>
+                  </ion-row>
+                </ion-grid>
+              </form>
+            </ion-card-content>
+          </ion-card>
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>加入家庭</ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <form id="join_family_form" class="ion-padding">
+                <ion-grid>
+                  <ion-row>
+                    <ion-col>
+                      <ion-item>
+                        <ion-input
+                          type="number"
+                          name="family_id"
+                          id="family_id"
+                          label="家庭 ID"
+                          placeholder="輸入家庭 ID"
+                          required
+                        ></ion-input>
+                      </ion-item>
+                    </ion-col>
+                  </ion-row>
+                  <ion-row>
+                    <ion-col>
+                      <ion-button expand="block" type="submit">加入家庭</ion-button>
+                    </ion-col>
+                  </ion-row>
+                </ion-grid>
+              </form>
+            </ion-card-content>
+          </ion-card>
+        </ion-content>
+        <ion-footer>
+          <ion-toolbar>
+            <ion-title size="small" class="ion-text-center">
+              © 2025 S&S 家庭應用程式。版權所有。
+            </ion-title>
+          </ion-toolbar>
+        </ion-footer>
+      </div>
+    </ion-app>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        console.log("DOM 已載入 family.html");
+        console.log("Ionic 版本:", window.Ionic?.version || "未載入");
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token") || "";
+        if (!token) {
+          console.log("未找到 token，正在跳轉到 /login.html");
+          window.location.href = "/login.html";
+          return;
+        }
+        console.log("找到 token:", token.substring(0, 20) + "...");
+
+        // 選單導航
+        const navItems = {
+          "nav-dashboard": "/index.html",
+          "nav-calendar": "/calendar.html",
+          "nav-tasks": "/tasks.html",
+          "nav-chat": "/chat.html",
+          "nav-family": "/family.html",
+        };
+        Object.keys(navItems).forEach((id) => {
+          const item = document.getElementById(id);
+          item?.addEventListener("click", () => {
+            const url = navItems[id];
+            console.log(`正在跳轉到 ${url}`);
+            window.location.href = url;
+          });
+        });
+
+        // 登出
+        document.getElementById("signOut")?.addEventListener("click", () => {
+          console.log("點擊登出");
+          localStorage.removeItem("token");
+          sessionStorage.removeItem("token");
+          console.log("已登出，清除 token");
+          window.location.href = "/login.html";
+        });
+
+        // Toast 顯示輔助函數
+        async function showToast(message, duration, color) {
+          if (window.Ionic) {
+            const toast = document.createElement("ion-toast");
+            toast.message = message;
+            toast.duration = duration;
+            toast.color = color;
+            document.body.appendChild(toast);
+            await toast.present();
+          } else {
+            alert(message);
+          }
+        }
+
+        // 獲取當前用戶信息
+        let currentUsername = "未知用戶";
+        async function fetchUser() {
+          try {
+            console.log("正在獲取當前用戶信息");
+            const response = await fetch("http://localhost:8100/user", {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            });
+            const data = await response.json();
+            console.log("獲取用戶回應:", JSON.stringify(data, null, 2));
+            if (!response.ok) {
+              throw new Error(data.error || "無法獲取用戶信息");
+            }
+            currentUsername = data.data.username || "未知用戶";
+          } catch (error) {
+            console.error("獲取用戶錯誤:", error);
+            await showToast(`無法載入用戶信息: ${error.message || '伺服器響應異常'}`, 3000, "danger");
+          }
+        }
+
+        async function fetchFamilies() {
+          try {
+            console.log("正在獲取家庭列表");
+            const response = await fetch("http://localhost:8100/my-families", {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            });
+            const data = await response.json();
+            console.log("獲取家庭回應:", JSON.stringify(data, null, 2));
+            if (!response.ok) {
+              throw new Error(data.error || "無法獲取家庭");
+            }
+
+            const familyList = document.getElementById("family-list");
+            familyList.innerHTML = ""; // 清空列表
+
+            const families = data.success && data.data && Array.isArray(data.data.families) ? data.data.families : [];
+            console.log("處理家庭數據:", families);
+
+            if (families.length === 0) {
+              familyList.innerHTML = `<ion-item><ion-label>未找到家庭</ion-label></ion-item>`;
+            } else {
+              for (const family of families) {
+                let members = [];
+                try {
+                  console.log(`正在獲取家庭 ID ${family.id} 的成員`);
+                  const memberResponse = await fetch(`http://localhost:8100/family/members?family_id=${family.id}`, {
+                    method: "GET",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                    },
+                  });
+                  const memberData = await memberResponse.json();
+                  console.log(`家庭 ${family.id} 的成員回應:`, memberData);
+                  if (!memberResponse.ok) {
+                    throw new Error(memberData.error || "無法獲取成員");
+                  }
+                  members = Array.isArray(memberData.data.members) ? memberData.data.members : [];
+                } catch (error) {
+                  console.error(`獲取家庭 ${family.id} 的成員錯誤:`, error);
+                  members = [];
+                }
+
+                const item = document.createElement("ion-item");
+                item.innerHTML = `
+                  <ion-label>
+                    <h2>${family.name}</h2>
+                    <p>當前成員名稱: ${currentUsername}</p>
+                    <p>ID: ${family.id} | 角色: ${family.role || '擁有者'}</p>
+                    <p>家庭成員: ${members.length > 0 ? members.map(m => m.username).join(', ') : '未找到成員'}</p>
+                  </ion-label>
+                `;
+                familyList.appendChild(item);
+              }
+            }
+          } catch (error) {
+            console.error("獲取家庭錯誤:", error);
+            await showToast(`無法載入家庭列表: ${error.message || '伺服器響應異常'}`, 3000, "danger");
+          }
+        }
+
+        // 獲取用戶信息並載入家庭列表
+        await fetchUser();
+        await fetchFamilies();
+
+        document.getElementById("create_family_form")?.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const form = event.target;
+          const formData = new FormData(form);
+          const name = formData.get("name");
+          console.log("正在創建家庭:", { name });
+
+          try {
+            const response = await fetch("http://localhost:8100/family", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ name }),
+            });
+            const data = await response.json();
+            console.log("創建家庭回應:", data);
+            if (!response.ok) {
+              throw new Error(data.error || "無法創建家庭");
+            }
+            await showToast(`家庭已創建 (ID: ${data.data.family_id})`, 2000, "success");
+            form.reset();
+            await fetchFamilies(); // 刷新列表
+          } catch (error) {
+            console.error("創建家庭錯誤:", error);
+            await showToast(
+              error.message === "User is already in a family"
+                ? "您已經加入一個家庭，無法創建新家庭"
+                : `無法創建家庭: ${error.message}`,
+              2000,
+              "danger"
+            );
+            await fetchFamilies(); // 刷新列表
+          }
+        });
+
+        document.getElementById("join_family_form")?.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const form = event.target;
+          const formData = new FormData(form);
+          const family_id = formData.get("family_id");
+          console.log("正在加入家庭 ID:", family_id);
+
+          try {
+            const response = await fetch("http://localhost:8100/family/join", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ family_id }),
+            });
+            const data = await response.json();
+            console.log("加入家庭回應:", data);
+            if (!response.ok) {
+              throw new Error(data.error || "無法加入家庭");
+            }
+            await showToast("已加入家庭", 2000, "success");
+            form.reset();
+            await fetchFamilies(); // 刷新列表
+          } catch (error) {
+            console.error("加入家庭錯誤:", error);
+            await showToast(
+              error.message === "User is already in a family"
+                ? "您已經加入一個家庭，無法加入其他家庭"
+                : `無法加入家庭: ${error.message}`,
+              2000,
+              "danger"
+            );
+            await fetchFamilies(); // 刷新列表
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>S&S Family App - Login</title>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/dist/ionic/ionic.esm.js"></script>
+    <script nomodule src="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/dist/ionic/ionic.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/css/ionic.bundle.min.css" />
+    <link rel="stylesheet" href="/styles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <ion-app>
+      <ion-menu content-id="main-content" side="start">
+        <ion-header>
+          <ion-toolbar>
+            <ion-title>Menu</ion-title>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content>
+          <ion-list>
+            <ion-item id="nav-dashboard"><ion-icon name="home-outline"></ion-icon>Dashboard</ion-item>
+            <ion-item id="nav-calendar"><ion-icon name="calendar-outline"></ion-icon>Calendar</ion-item>
+            <ion-item id="nav-tasks"><ion-icon name="checkbox-outline"></ion-icon>Tasks</ion-item>
+            <ion-item id="nav-chat"><ion-icon name="chatbubble-outline"></ion-icon>Chat</ion-item>
+            <ion-item id="nav-family"><ion-icon name="people-outline"></ion-icon>Family</ion-item>
+            <ion-item id="signOut"><ion-icon name="log-out-outline"></ion-icon>Sign Out</ion-item>
+          </ion-list>
+        </ion-content>
+      </ion-menu>
+      <div class="ion-page" id="main-content">
+        <ion-header>
+          <ion-toolbar>
+            <ion-buttons slot="start">
+              <ion-menu-button></ion-menu-button>
+            </ion-buttons>
+            <ion-title>S&S Family App</ion-title>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content class="ion-padding">
+          <img src="/assets/family-logo.png" alt="Family Logo" class="family-logo" />
+          <div class="welcome-message">
+            <h2>Welcome, <span id="welcomeUsername">Guest</span>!</h2>
+            <p>Connect with your family, plan events, and share moments.</p>
+          </div>
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>Quick Actions</ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <ion-grid>
+                <ion-row>
+                  <ion-col size="12" size-md="6">
+                    <ion-button expand="block" id="btn-calendar">
+                      <ion-icon name="calendar-outline" slot="start"></ion-icon>
+                      View Calendar
+                    </ion-button>
+                  </ion-col>
+                  <ion-col size="12" size-md="6">
+                    <ion-button expand="block" id="btn-tasks">
+                      <ion-icon name="checkbox-outline" slot="start"></ion-icon>
+                      Manage Tasks
+                    </ion-button>
+                  </ion-col>
+                  <ion-col size="12" size-md="6">
+                    <ion-button expand="block" id="btn-chat">
+                      <ion-icon name="chatbubble-outline" slot="start"></ion-icon>
+                      Family Chat
+                    </ion-button>
+                  </ion-col>
+                  <ion-col size="12" size-md="6">
+                    <ion-button expand="block" id="btn-family">
+                      <ion-icon name="people-outline" slot="start"></ion-icon>
+                      Manage Family
+                    </ion-button>
+                  </ion-col>
+                </ion-row>
+              </ion-grid>
+            </ion-card-content>
+          </ion-card>
+          <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+            <ion-fab-button color="primary">
+              <ion-icon name="add-outline"></ion-icon>
+            </ion-fab-button>
+            <ion-fab-list side="top">
+              <ion-fab-button id="fab-calendar" color="light"><ion-icon name="calendar-outline"></ion-icon></ion-fab-button>
+              <ion-fab-button id="fab-tasks" color="light"><ion-icon name="checkbox-outline"></ion-icon></ion-fab-button>
+              <ion-fab-button id="fab-chat" color="light"><ion-icon name="chatbubble-outline"></ion-icon></ion-fab-button>
+            </ion-fab-list>
+          </ion-fab>
+        </ion-content>
+        <ion-footer>
+          <ion-toolbar>
+            <ion-title size="small" class="ion-text-center">
+              © 2025 S&S Family App. All rights reserved.
+            </ion-title>
+          </ion-toolbar>
+        </ion-footer>
+      </div>
+    </ion-app>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM loaded for index.html");
+        console.log("Ionic version:", window.Ionic?.version || "Not loaded");
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.log("No token found, redirecting to /login.html");
+          window.location.href = "/login.html";
+          return;
+        }
+
+        // Menu navigation
+        const navItems = {
+          "nav-dashboard": "/index.html",
+          "nav-calendar": "/calendar.html",
+          "nav-tasks": "/tasks.html",
+          "nav-chat": "/chat.html",
+          "nav-family": "/family.html",
+        };
+        Object.keys(navItems).forEach((id) => {
+          const item = document.getElementById(id);
+          item.addEventListener("click", () => {
+            const url = navItems[id];
+            console.log(`Navigating to ${url}`);
+            window.location.href = url;
+          });
+        });
+
+        // Button navigation
+        const buttonNav = {
+          "btn-calendar": "/calendar.html",
+          "btn-tasks": "/tasks.html",
+          "btn-chat": "/chat.html",
+          "btn-family": "/family.html",
+          "fab-calendar": "/calendar.html",
+          "fab-tasks": "/tasks.html",
+          "fab-chat": "/chat.html",
+        };
+        Object.keys(buttonNav).forEach((id) => {
+          const button = document.getElementById(id);
+          button.addEventListener("click", () => {
+            const url = buttonNav[id];
+            console.log(`Button clicked, navigating to ${url}`);
+            window.location.href = url;
+          });
+        });
+
+        // Sign out
+        document.getElementById("signOut").addEventListener("click", () => {
+          console.log("Sign out clicked");
+          localStorage.removeItem("token");
+          console.log("Logged out, cleared token");
+          window.location.href = "/login.html";
+        });
+
+        // Fetch user
+        async function fetchUser() {
+          try {
+            console.log("Fetching user info");
+            const response = await fetch("http://localhost:8100/user", {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+              },
+            });
+            const data = await response.json();
+            console.log("Fetch user response:", data);
+            if (!response.ok) {
+              throw new Error(data.error || "Failed to fetch user data");
+            }
+            return {
+              username: data.username || "Guest",
+              email: data.email || "No email",
+            };
+          } catch (err) {
+            console.error("Error fetching user:", err);
+            localStorage.removeItem("token");
+            window.location.href = "/login.html";
+            return { username: "Guest", email: "Not logged in" };
+          }
+        }
+
+        // Update welcome message
+        async function updateWelcomeMessage() {
+          try {
+            const user = await fetchUser();
+            document.getElementById("welcomeUsername").textContent = user.username;
+          } catch (err) {
+            document.getElementById("welcomeUsername").textContent = "Guest";
+          }
+        }
+
+        updateWelcomeMessage();
+      });
+    </script>
+  </body>
+</html>

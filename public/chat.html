@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>S&S Family App - Chat</title>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/dist/ionic/ionic.esm.js"></script>
+    <script nomodule src="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/dist/ionic/ionic.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/css/ionic.bundle.min.css" />
+    <link rel="stylesheet" href="/styles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+    <style>
+      #chat_list {
+        max-height: 400px;
+        overflow-y: auto;
+        padding: 16px;
+      }
+      .message {
+        margin-bottom: 12px;
+        padding: 12px;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+      }
+      .message.sent {
+        background: var(--primary-pink);
+        color: var(--text-dark);
+        margin-left: 20%;
+      }
+      .message.received {
+        background: var(--light-pink);
+        margin-right: 20%;
+      }
+      .system-message {
+        background: var(--ion-color-light);
+        color: var(--ion-color-medium);
+        text-align: center;
+        font-style: italic;
+        padding: 8px;
+        margin-bottom: 12px;
+        border-radius: 12px;
+      }
+      ion-avatar {
+        width: 32px;
+        height: 32px;
+        margin-right: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <ion-app>
+      <ion-menu content-id="main-content" side="start">
+        <ion-header>
+          <ion-toolbar>
+            <ion-title>選單</ion-title>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content>
+          <ion-list>
+            <ion-item id="nav-dashboard"><ion-icon name="home-outline"></ion-icon>儀表板</ion-item>
+            <ion-item id="nav-calendar"><ion-icon name="calendar-outline"></ion-icon>日曆</ion-item>
+            <ion-item id="nav-tasks"><ion-icon name="checkbox-outline"></ion-icon>任務</ion-item>
+            <ion-item id="nav-chat"><ion-icon name="chatbubble-outline"></ion-icon>聊天</ion-item>
+            <ion-item id="nav-family"><ion-icon name="people-outline"></ion-icon>家庭</ion-item>
+            <ion-item id="signOut"><ion-icon name="log-out-outline"></ion-icon>登出</ion-item>
+          </ion-list>
+        </ion-content>
+      </ion-menu>
+      <div class="ion-page" id="main-content">
+        <ion-header>
+          <ion-toolbar>
+            <ion-buttons slot="start">
+              <ion-menu-button></ion-menu-button>
+            </ion-buttons>
+            <ion-title>S&S 家庭應用程式 - 聊天</ion-title>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content class="ion-padding">
+          <img src="/assets/family-logo.png" alt="家庭標誌" class="family-logo" />
+          <div class="welcome-message">
+            <h2>家庭聊天</h2>
+            <p>與您的家人保持聯繫。</p>
+          </div>
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>發送訊息</ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <form id="message_form" class="ion-padding">
+                <ion-grid>
+                  <ion-row>
+                    <ion-col>
+                      <ion-item>
+                        <ion-textarea
+                          name="content"
+                          id="content"
+                          placeholder="輸入您的訊息"
+                          required
+                          label="訊息"
+                          label-placement="stacked"
+                        ></ion-textarea>
+                      </ion-item>
+                    </ion-col>
+                  </ion-row>
+                  <ion-row>
+                    <ion-col>
+                      <ion-button expand="block" type="submit" id="submit_message">發送</ion-button>
+                    </ion-col>
+                  </ion-row>
+                </ion-grid>
+              </form>
+            </ion-card-content>
+          </ion-card>
+          <ion-list id="chat_list"></ion-list>
+        </ion-content>
+        <ion-footer>
+          <ion-toolbar>
+            <ion-title size="small" class="ion-text-center">
+              © 2025 S&S 家庭應用程式。版權所有。
+            </ion-title>
+          </ion-toolbar>
+        </ion-footer>
+      </div>
+    </ion-app>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/client.js"></script>
+  </body>
+</html>
