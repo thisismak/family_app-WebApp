@@ -218,7 +218,7 @@
         const handleSubmit = async (eventData) => {
           const token = localStorage.getItem("token") || sessionStorage.getItem("token") || "";
           try {
-            const response = await fetch("http://localhost:8100/calendar", {
+            const response = await fetch("/calendar", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -269,7 +269,7 @@
         const token = localStorage.getItem("token") || sessionStorage.getItem("token") || "";
         try {
           console.log("正在獲取事件列表");
-          const response = await fetch("http://localhost:8100/calendar", {
+          const response = await fetch("/calendar", {
             method: "GET",
             headers: {
               "Content-Type": "application/json",

@@ -159,7 +159,7 @@
         async function fetchUser() {
           try {
             console.log("Fetching user info");
-            const response = await fetch("http://localhost:8100/user", {
+            const response = await fetch("/user", {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",

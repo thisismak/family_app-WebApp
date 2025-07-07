@@ -109,7 +109,7 @@
           loginButton.querySelector("ion-spinner").hidden = false;
 
           try {
-            const response = await fetch("http://localhost:8100/login", {
+            const response = await fetch("/login", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ username, password }),

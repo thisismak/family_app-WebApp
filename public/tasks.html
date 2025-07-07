@@ -224,7 +224,7 @@
         async function checkFamilyStatus() {
           try {
             console.log("檢查用戶家庭狀態");
-            const response = await fetch("http://localhost:8100/my-families", {
+            const response = await fetch("/my-families", {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
@@ -272,7 +272,7 @@
         async function fetchFamilyMembers() {
           try {
             console.log("正在獲取家庭成員，家庭 ID:", familyId);
-            const response = await fetch(`http://localhost:8100/family/members?family_id=${familyId}`, {
+            const response = await fetch(`/family/members?family_id=${familyId}`, {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
@@ -302,7 +302,7 @@
         async function fetchTasks(query = "", sort = "") {
           try {
             console.log("正在獲取任務列表", { query, sort });
-            const url = new URL("http://localhost:8100/tasks");
+            const url = new URL("/tasks");
             if (query) url.searchParams.append("q", query);
             if (sort) url.searchParams.append("sort", sort);
             const response = await fetch(url, {
@@ -384,7 +384,7 @@
           const newStatus = currentStatus === "pending" ? "completed" : "pending";
           try {
             console.log(`將任務 ${taskId} 切換為 ${newStatus}`);
-            const response = await fetch(`http://localhost:8100/tasks/${taskId}`, {
+            const response = await fetch(`/tasks/${taskId}`, {
               method: "PATCH",
               headers: {
                 "Content-Type": "application/json",
@@ -429,7 +429,7 @@
           if (!confirmed) return;
           try {
             console.log(`刪除任務 ${taskId}`);
-            const response = await fetch(`http://localhost:8100/tasks/${taskId}`, {
+            const response = await fetch(`/tasks/${taskId}`, {
               method: "DELETE",
               headers: {
                 "Content-Type": "application/json",
@@ -504,7 +504,7 @@
           console.log("任務表單提交:", { taskId, title, description, assignee_id, due_date, priority });
 
           try {
-            const url = taskId ? `http://localhost:8100/tasks/${taskId}` : "http://localhost:8100/tasks";
+            const url = taskId ? `/tasks/${taskId}` : "/tasks";
             const method = taskId ? "PATCH" : "POST";
             const body = {
               title,

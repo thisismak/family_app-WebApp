@@ -191,7 +191,7 @@
         async function fetchUser() {
           try {
             console.log("正在獲取當前用戶信息");
-            const response = await fetch("http://localhost:8100/user", {
+            const response = await fetch("/user", {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
@@ -213,7 +213,7 @@
         async function fetchFamilies() {
           try {
             console.log("正在獲取家庭列表");
-            const response = await fetch("http://localhost:8100/my-families", {
+            const response = await fetch("/my-families", {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
@@ -239,7 +239,7 @@
                 let members = [];
                 try {
                   console.log(`正在獲取家庭 ID ${family.id} 的成員`);
-                  const memberResponse = await fetch(`http://localhost:8100/family/members?family_id=${family.id}`, {
+                  const memberResponse = await fetch(`/family/members?family_id=${family.id}`, {
                     method: "GET",
                     headers: {
                       "Content-Type": "application/json",
@@ -287,7 +287,7 @@
           console.log("正在創建家庭:", { name });
 
           try {
-            const response = await fetch("http://localhost:8100/family", {
+            const response = await fetch("/family", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -324,7 +324,7 @@
           console.log("正在加入家庭 ID:", family_id);
 
           try {
-            const response = await fetch("http://localhost:8100/family/join", {
+            const response = await fetch("/family/join", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
