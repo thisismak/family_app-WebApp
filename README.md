@@ -38,11 +38,11 @@ sudo systemctl status nginx
 ## 安裝Git來同步Github
 sudo dnf install -y git
 ## 建立網站目錄後從Github下載網站內容
-mkdir ~/family-app
-cd ~/family-app
+mkdir -p /var/www/family-app
+cd /var/www/family-app
 git clone https://github.com/thisismak/family_app-WebApp .
 ## 進入網站目錄及透過package.json安裝需要的工具
-cd ~/family-app
+cd /var/www/family-app
 npm install
 ## 建立環境及加入SQL內容(因安全性問題, 不建議上載到Github)
 vi .env
@@ -65,6 +65,7 @@ sudo vi /etc/nginx/conf.d/family-app.conf
 server {
     listen 80;
     server_name your_domain.com www.your_domain.com;  # 替換為你的域名或服務器 IP
+    error_log /var/log/nginx/family-app-error.log debug;
 
     location / {
         proxy_pass http://localhost:8100;
@@ -85,7 +86,7 @@ server {
     }
 
     location ~* \.(html|css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-        root /home/username/family-app/public;
+        root /var/www/family-app/public;
         expires 30d;
         access_log off;
     }
