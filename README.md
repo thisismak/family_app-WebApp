@@ -4,6 +4,11 @@ sudo dnf update -y
 ## 安裝EPEL及
 sudo dnf install -y epel-release
 sudo dnf module install nodejs:18
+↓↓↓ 備用方案, export為開放proxy加速, unset為取消
+export http_proxy=http://123.45.67.89:8080
+export https_proxy=http://123.45.67.89:8080
+unset http_proxy
+unset https_proxy
 ## 檢查版本
 node -v
 例如 v18.20.6
