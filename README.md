@@ -48,7 +48,7 @@ npm install
 vi .env
 DB_HOST=localhost
 DB_USER=app_user
-DB_PASSWORD=your_secure_password
+DB_PASSWORD=sam1_sql_password
 DB_NAME=family_app
 PORT=8100
 JWT_SECRET=your_jwt_secret  # 使用你提供的 JWT_SECRET 或生成新值
