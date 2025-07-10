@@ -65,7 +65,7 @@ curl http://localhost:8100
 sudo vi /etc/nginx/conf.d/family-app.conf
 server {
     listen 80;
-    server_name your_domain.com www.your_domain.com;  # 替換為你的域名或服務器 IP
+    server_name mysandshome.com www.mysandshome.com;  # 替換為你的域名或服務器 IP
     error_log /var/log/nginx/family-app-error.log debug;
 
     location / {
