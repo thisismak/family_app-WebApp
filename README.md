@@ -24,7 +24,7 @@ sudo mysql_secure_installation
 ## 建立nginx與SQL溝通的數據庫及登入帳號
 mysql -u root -p
 CREATE DATABASE family_app;
-CREATE USER 'app_user'@'localhost' IDENTIFIED BY 'your_secure_password';
+CREATE USER 'app_user'@'localhost' IDENTIFIED BY 'sam1_sql_password';
 GRANT ALL PRIVILEGES ON family_app.* TO 'app_user'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
