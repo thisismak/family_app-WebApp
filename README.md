@@ -51,7 +51,8 @@ DB_USER=app_user
 DB_PASSWORD=sam1_sql_password
 DB_NAME=family_app
 PORT=8100
-JWT_SECRET=your_jwt_secret  # 使用你提供的 JWT_SECRET 或生成新值
+# JWT_SECRET=your_jwt_secret
+JWT_SECRET=bDiB6RXGKM96ODYWFfyXgl/9r1ar6/CgGLYfi17HKsBy94YduWwgmaIk/eIa31BF
 ## Project中安裝MySQL/MariaDB套件
 npm install mysql2
 ## 解釋typescript內容
