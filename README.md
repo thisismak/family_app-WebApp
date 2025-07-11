@@ -154,6 +154,11 @@ server {
     access_log /var/log/nginx/family-app-access.log;
     # 啟用錯誤日誌
     error_log /var/log/nginx/family-app-error.log;
+    
+    # 阻止無效請求（WordPress 掃描和未知 JS 文件）
+    location ~* (wp-admin|wordpress|twint_ch\.js|lkk_ch\.js) {
+        return 403;
+    }
 ...
 
 e. 檢查配置
