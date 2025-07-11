@@ -13,6 +13,11 @@
       ion-spinner[hidden] {
         display: none !important;
       }
+      .error {
+        color: var(--ion-color-danger, #ff0000);
+        font-size: 12px;
+        margin-top: 4px;
+      }
     </style>
   </head>
   <body>
@@ -27,12 +32,12 @@
             <form id="login_form">
               <ion-list>
                 <ion-item>
-                  <ion-input id="username" name="username" type="text" label="Username" required></ion-input>
-                  <div id="username_error" class="error" hidden>Username must be 3-32 characters</div>
+                  <ion-input id="username" name="username" type="text" label="Username" required clear-input></ion-input>
+                  <div id="username_error" class="error" hidden>Username is required</div>
                 </ion-item>
                 <ion-item>
-                  <ion-input id="password" name="password" type="password" label="Password" required></ion-input>
-                  <div id="password_error" class="error" hidden>Password must be at least 6 characters</div>
+                  <ion-input id="password" name="password" type="password" label="Password" required clear-input></ion-input>
+                  <div id="password_error" class="error" hidden>Password is required</div>
                   <ion-icon id="togglePassword" name="eye-outline" slot="end"></ion-icon>
                 </ion-item>
               </ion-list>
@@ -68,6 +73,12 @@
           ? 'https://www.mysandshome.com'
           : 'http://localhost:8100';
 
+        // 初始化錯誤訊息和按鈕狀態
+        usernameError.hidden = true;
+        passwordError.hidden = true;
+        loginButton.disabled = false; // 初始啟用按鈕
+        console.log("Initial state:", { usernameError: usernameError.hidden, passwordError: passwordError.hidden, loginButtonDisabled: loginButton.disabled });
+
         // Toast 顯示輔助函數
         async function showToast(message, duration, color) {
           console.log(`Showing toast: ${message}`);
@@ -87,19 +98,27 @@
         }
 
         // 輸入驗證
-        usernameInput?.addEventListener("input", () => {
-          const value = usernameInput.value.trim();
-          usernameError.hidden = value.length >= 3 && value.length <= 32;
-          console.log("Username input:", { value, valid: usernameError.hidden });
-          loginButton.disabled = !(usernameError.hidden && passwordError.hidden);
+        usernameInput?.addEventListener("ionInput", (e) => {
+          const value = e.target.value?.trim() || "";
+          usernameError.hidden = value.length > 0; // 僅檢查是否為空
+          console.log("Username input:", { value, length: value.length, valid: usernameError.hidden });
+          updateButtonState();
         });
 
-        passwordInput?.addEventListener("input", () => {
-          const value = passwordInput.value.trim();
-          passwordError.hidden = value.length >= 6;
-          console.log("Password input:", { length: value.length, valid: passwordError.hidden });
-          loginButton.disabled = !(usernameError.hidden && passwordError.hidden);
+        passwordInput?.addEventListener("ionInput", (e) => {
+          const value = e.target.value?.trim() || "";
+          passwordError.hidden = value.length > 0; // 僅檢查是否為空
+          console.log("Password input:", { value, length: value.length, valid: passwordError.hidden });
+          updateButtonState();
         });
+
+        // 更新按鈕狀態
+        function updateButtonState() {
+          const usernameValid = usernameInput.value.trim().length > 0;
+          const passwordValid = passwordInput.value.trim().length > 0;
+          loginButton.disabled = !(usernameValid && passwordValid);
+          console.log("Button state updated:", { usernameValid, passwordValid, disabled: loginButton.disabled });
+        }
 
         // 切換密碼可見性
         togglePassword?.addEventListener("click", () => {
