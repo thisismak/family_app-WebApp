@@ -34,7 +34,6 @@
         </ion-header>
         <ion-content>
           <ion-list>
-            <ion-item id="nav-dashboard"><ion-icon name="home-outline"></ion-icon>儀表板</ion-item>
             <ion-item id="nav-calendar"><ion-icon name="calendar-outline"></ion-icon>日曆</ion-item>
             <ion-item id="nav-tasks"><ion-icon name="checkbox-outline"></ion-icon>任務</ion-item>
             <ion-item id="nav-chat"><ion-icon name="chatbubble-outline"></ion-icon>聊天</ion-item>
@@ -168,7 +167,6 @@
 
         // 選單導航
         const navItems = {
-          "nav-dashboard": "/index.html",
           "nav-calendar": "/calendar.html",
           "nav-tasks": "/tasks.html",
           "nav-chat": "/chat.html",
@@ -183,7 +181,7 @@
           });
         });
 
-        // 登出
+        // 登施出
         document.getElementById("signOut")?.addEventListener("click", () => {
           console.log("點擊登出");
           localStorage.removeItem("token");
