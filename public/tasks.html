@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/css/ionic.bundle.min.css" />
     <link rel="stylesheet" href="/styles.css" />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+    <script src="/client.js"></script>
     <style>
       ion-item.completed {
         --background: var(--light-pink);
@@ -169,31 +170,6 @@
           return;
         }
         console.log("找到 token:", token.substring(0, 20) + "...");
-
-        // 選單導航
-        const navItems = {
-          "nav-calendar": "/calendar.html",
-          "nav-tasks": "/tasks.html",
-          "nav-chat": "/chat.html",
-          "nav-family": "/family.html",
-        };
-        Object.keys(navItems).forEach((id) => {
-          const item = document.getElementById(id);
-          item?.addEventListener("click", () => {
-            const url = navItems[id];
-            console.log(`正在跳轉到 ${url}`);
-            window.location.href = url;
-          });
-        });
-
-        // 登出
-        document.getElementById("signOut")?.addEventListener("click", () => {
-          console.log("點擊登出");
-          localStorage.removeItem("token");
-          sessionStorage.removeItem("token");
-          console.log("已登出，清除 token");
-          window.location.href = "/login.html";
-        });
 
         // Toast 顯示輔助函數
         async function showToast(message, duration, color) {
