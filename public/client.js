@@ -11,7 +11,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // 選單導航
   const navItems = {
-    "nav-dashboard": "/index.html",
     "nav-calendar": "/calendar.html",
     "nav-tasks": "/tasks.html",
     "nav-chat": "/chat.html",
