@@ -363,7 +363,7 @@
         async function checkFamilyStatus() {
           try {
             console.log("檢查用戶家庭狀態");
-            const response = await fetch("http://localhost:8100/my-families", {
+            const response = await fetch("/my-families", {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",

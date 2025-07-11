@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   async function checkFamilyStatus() {
     try {
       console.log("檢查用戶家庭狀態");
-      const response = await fetch("http://localhost:8100/my-families", {
+      const response = await fetch("/my-families", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -78,7 +78,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   async function fetchUser() {
     try {
       console.log("正在獲取用戶資訊");
-      const response = await fetch("http://localhost:8100/user", {
+      const response = await fetch("/user", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
