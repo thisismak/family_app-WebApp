@@ -129,5 +129,44 @@ git add .
 git commit -m "installed server"
 ## 上載現系統文件到Github
 git push origin main
+## 安裝SSL (Let’s encrypt)
+a. 安裝 Certbot 和 Nginx 插件
+sudo dnf install certbot python3-certbot-nginx -y
+
+b. 驗證 Certbot 安裝
+certbot --version
+
+c. 申請 Let's Encrypt SSL 證書
+sudo certbot --nginx -d mysandshome.com -d www.mysandshome.com
+
+d. 檢查 Nginx 配置
+server {
+    listen 80;
+    server_name mysandshome.com www.mysandshome.com;
+    return 301 https://$host$request_uri; # 自動重定向到 HTTPS
+}
+
+server {
+    listen 443 ssl;
+    server_name mysandshome.com www.mysandshome.com;
+
+    ssl_certificate /etc/letsencrypt/live/mysandshome.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/mysandshome.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+...
+
+e. 檢查配置
+sudo nginx -t
+
+f. 如果沒有錯誤，重啟 Nginx 應用更改
+sudo systemctl restart nginx
+
+g. 設置自動續期
+sudo certbot renew --dry-run
+
+h. 可以手動添加 Cron 任務
+sudo crontab -e
+0 0,12 * * * certbot renew --quiet
 ## 打開網站
 例如 http://10.0.0.70/
