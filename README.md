@@ -140,12 +140,7 @@ c. 申請 Let's Encrypt SSL 證書
 sudo certbot --nginx -d mysandshome.com -d www.mysandshome.com
 
 d. 檢查 Nginx 配置
-server {
-    listen 80;
-    server_name mysandshome.com www.mysandshome.com;
-    return 301 https://$host$request_uri; # 自動重定向到 HTTPS
-}
-
+[root@localhost ~]# cat /etc/nginx/conf.d/family-app.conf
 server {
     listen 443 ssl;
     server_name mysandshome.com www.mysandshome.com;
@@ -154,6 +149,11 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/mysandshome.com/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    # 啟用訪問日誌
+    access_log /var/log/nginx/family-app-access.log;
+    # 啟用錯誤日誌
+    error_log /var/log/nginx/family-app-error.log;
 ...
 
 e. 檢查配置
@@ -169,4 +169,4 @@ h. 可以手動添加 Cron 任務
 sudo crontab -e
 0 0,12 * * * certbot renew --quiet
 ## 打開網站
-例如 http://10.0.0.70/
+例如 https://www.mysandshome.com/
