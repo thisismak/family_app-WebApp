@@ -4,11 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>S&S Family App - Login</title>
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/dist/ionic/ionic.esm.js"></script>
-    <script nomodule src="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/dist/ionic/ionic.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/css/ionic.bundle.min.css" />
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core@7.8.4/dist/ionic/ionic.esm.js"></script>
+    <script nomodule src="https://cdn.jsdelivr.net/npm/@ionic/core@7.8.4/dist/ionic/ionic.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ionic/core@7.8.4/css/ionic.bundle.min.css" />
     <link rel="stylesheet" href="/styles.css" />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+    <style>
+      ion-spinner[hidden] {
+        display: none !important;
+      }
+    </style>
   </head>
   <body>
     <ion-app>
@@ -22,19 +27,13 @@
             <form id="login_form">
               <ion-list>
                 <ion-item>
-                  <ion-label position="floating">Username</ion-label>
-                  <ion-input id="username" name="username" type="text" required></ion-input>
+                  <ion-input id="username" name="username" type="text" label="Username" required></ion-input>
                   <div id="username_error" class="error" hidden>Username must be 3-32 characters</div>
                 </ion-item>
                 <ion-item>
-                  <ion-label position="floating">Password</ion-label>
-                  <ion-input id="password" name="password" type="password" required></ion-input>
+                  <ion-input id="password" name="password" type="password" label="Password" required></ion-input>
                   <div id="password_error" class="error" hidden>Password must be at least 6 characters</div>
                   <ion-icon id="togglePassword" name="eye-outline" slot="end"></ion-icon>
-                </ion-item>
-                <ion-item lines="none">
-                  <ion-checkbox slot="start" name="remember"></ion-checkbox>
-                  <ion-label>Remember Me</ion-label>
                 </ion-item>
               </ion-list>
               <ion-button id="login_button" expand="block" type="submit">
@@ -62,85 +61,129 @@
         const loginButton = document.getElementById("login_button");
         const usernameError = document.getElementById("username_error");
         const passwordError = document.getElementById("password_error");
+        let isSubmitting = false;
+
+        // 動態 API URL
+        const API_BASE_URL = window.location.hostname === 'www.mysandshome.com'
+          ? 'https://www.mysandshome.com'
+          : 'http://localhost:8100';
 
         // Toast 顯示輔助函數
         async function showToast(message, duration, color) {
-          if (window.Ionic) {
+          console.log(`Showing toast: ${message}`);
+          try {
             const toast = document.createElement("ion-toast");
             toast.message = message;
             toast.duration = duration;
             toast.color = color;
             document.body.appendChild(toast);
             await toast.present();
-          } else {
-            alert(message);
+            await toast.onDidDismiss();
+            console.log(`Toast dismissed: ${message}`);
+          } catch (error) {
+            console.error("Toast error:", error);
+            alert(message); // 後備方案
           }
         }
 
-        // Input validation
+        // 輸入驗證
         usernameInput?.addEventListener("input", () => {
           const value = usernameInput.value.trim();
           usernameError.hidden = value.length >= 3 && value.length <= 32;
+          console.log("Username input:", { value, valid: usernameError.hidden });
+          loginButton.disabled = !(usernameError.hidden && passwordError.hidden);
         });
 
         passwordInput?.addEventListener("input", () => {
-          passwordError.hidden = passwordInput.value.length >= 6;
+          const value = passwordInput.value.trim();
+          passwordError.hidden = value.length >= 6;
+          console.log("Password input:", { length: value.length, valid: passwordError.hidden });
+          loginButton.disabled = !(usernameError.hidden && passwordError.hidden);
         });
 
-        // Toggle password visibility
+        // 切換密碼可見性
         togglePassword?.addEventListener("click", () => {
           const type = passwordInput.type === "password" ? "text" : "password";
           passwordInput.type = type;
           togglePassword.name = type === "password" ? "eye-outline" : "eye-off-outline";
+          console.log("Toggled password visibility:", { type });
         });
 
-        // Form submission
+        // 表單提交
         loginForm?.addEventListener("submit", async (event) => {
           event.preventDefault();
-          console.log("Form submitted");
+          if (isSubmitting) {
+            console.log("Form submission blocked: Already submitting");
+            return;
+          }
+
+          console.log("Form submission started");
+          isSubmitting = true;
           const formData = new FormData(loginForm);
           const username = formData.get("username")?.toString().trim();
           const password = formData.get("password")?.toString().trim();
-          const remember = formData.get("remember") === "on";
 
-          console.log("Login attempt:", { username, remember });
+          console.log("Login attempt:", { username, passwordLength: password?.length });
+
+          if (!username || !password) {
+            console.log("Validation failed: Username or password missing");
+            await showToast("Username and password are required", 2000, "danger");
+            isSubmitting = false;
+            return;
+          }
 
           loginButton.disabled = true;
-          loginButton.querySelector("ion-spinner").hidden = false;
+          const spinner = loginButton.querySelector("ion-spinner");
+          spinner.hidden = false;
+          console.log("Spinner shown");
 
           try {
-            const response = await fetch("/login", {
+            const loginUrl = `${API_BASE_URL}/login`;
+            console.log("Sending login request to:", loginUrl);
+            const response = await fetch(loginUrl, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ username, password }),
             });
+
+            console.log("Response received:", {
+              status: response.status,
+              statusText: response.statusText,
+              ok: response.ok,
+            });
+
             const data = await response.json();
-            console.log("Login response:", data);
+            console.log("Response data:", data);
 
             if (!data.success) {
               throw new Error(data.error || "Login failed");
             }
 
             const token = data.data.token;
-            if (remember) {
-              localStorage.setItem("token", token);
-              sessionStorage.removeItem("token");
-              console.log("Token stored in localStorage");
-            } else {
-              sessionStorage.setItem("token", token);
-              localStorage.removeItem("token");
-              console.log("Token stored in sessionStorage");
-            }
+            console.log("Token received:", { tokenLength: token.length });
+
+            sessionStorage.setItem("token", token);
+            localStorage.removeItem("token");
+            console.log("Token stored in sessionStorage");
 
             await showToast("Login Successful", 2000, "success");
             console.log("Redirecting to /family.html");
             window.location.href = "/family.html";
           } catch (error) {
-            console.error("Login error:", error.message);
+            console.error("Login error:", { message: error.message, stack: error.stack });
             await showToast(`Failed to login: ${error.message}`, 2000, "danger");
           } finally {
+            console.log("Finalizing login attempt");
+            isSubmitting = false;
             loginButton.disabled = false;
-            loginButton.querySelector("ion-spinner").hidden = true;
+            spinner.hidden = true;
+            setTimeout(() => {
+              if (!spinner.hidden) {
+                console.warn("Spinner still visible, forcing hide");
+                spinner.hidden = true;
+                spinner.style.display = 'none';
+              }
+            }, 100);
           }
         });
       });
