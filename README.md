@@ -64,8 +64,28 @@ curl http://localhost:8100
 sudo vi /etc/nginx/conf.d/family-app.conf
 server {
     listen 80;
-    server_name mysandshome.com www.mysandshome.com;  # 替換為你的域名或服務器 IP
-    error_log /var/log/nginx/family-app-error.log debug;
+    server_name mysandshome.com www.mysandshome.com;
+    return 301 https://$host$request_uri; # 自動重定向到 HTTPS
+}
+
+server {
+    listen 443 ssl;
+    server_name mysandshome.com www.mysandshome.com;
+
+    ssl_certificate /etc/letsencrypt/live/mysandshome.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/mysandshome.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    # 啟用訪問日誌
+    access_log /var/log/nginx/family-app-access.log;
+    # 啟用錯誤日誌
+    error_log /var/log/nginx/family-app-error.log;
+
+    # 阻止無效請求（WordPress 掃描和未知 JS 文件）
+    location ~* (wp-admin|wordpress|twint_ch\.js|lkk_ch\.js) {
+        return 403;
+    }
 
     location / {
         proxy_pass http://localhost:8100;
@@ -138,26 +158,13 @@ certbot --version
 c. 申請 Let's Encrypt SSL 證書
 sudo certbot --nginx -d mysandshome.com -d www.mysandshome.com
 
-d. 檢查 Nginx 配置
-[root@localhost ~]# cat /etc/nginx/conf.d/family-app.conf
-server {
-    listen 443 ssl;
-    server_name mysandshome.com www.mysandshome.com;
-
+d. Nginx 配置
+早前步驟已設置完成
+...
     ssl_certificate /etc/letsencrypt/live/mysandshome.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/mysandshome.com/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-
-    # 啟用訪問日誌
-    access_log /var/log/nginx/family-app-access.log;
-    # 啟用錯誤日誌
-    error_log /var/log/nginx/family-app-error.log;
-    
-    # 阻止無效請求（WordPress 掃描和未知 JS 文件）
-    location ~* (wp-admin|wordpress|twint_ch\.js|lkk_ch\.js) {
-        return 403;
-    }
 ...
 
 e. 檢查配置
