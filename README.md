@@ -87,6 +87,35 @@ server {
         return 403;
     }
 
+    # PWA manifest 文件，禁用快取
+    location = /manifest.json {
+        root /var/www/family-app/public;
+        expires off;
+        access_log off;
+    }
+
+    # PWA Service Worker 文件，禁用快取
+    location = /serviceworker.js {
+        root /var/www/family-app/public;
+        expires off;
+        access_log off;
+    }
+
+    # Digital Asset Links for TWA (Google Play Store)
+    location /.well-known/ {
+        root /var/www/family-app/public;
+        expires off;
+        access_log off;
+    }
+
+    # 靜態檔案（HTML、CSS、JS、圖片等）
+    location ~* \.(html|css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        root /var/www/family-app/public;
+        expires 30d;
+        access_log off;
+    }
+
+    # 反向代理到 Node.js 應用
     location / {
         proxy_pass http://localhost:8100;
         proxy_http_version 1.1;
@@ -96,6 +125,7 @@ server {
         proxy_cache_bypass $http_upgrade;
     }
 
+    # Socket.IO 支援
     location /socket.io/ {
         proxy_pass http://localhost:8100;
         proxy_http_version 1.1;
@@ -103,12 +133,6 @@ server {
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
-    }
-
-    location ~* \.(html|css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-        root /var/www/family-app/public;
-        expires 30d;
-        access_log off;
     }
 }
 ## 檢查nginx的配置是否正常
