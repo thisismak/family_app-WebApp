@@ -50,16 +50,16 @@
       <ion-menu content-id="main-content" side="start">
         <ion-header>
           <ion-toolbar>
-            <ion-title>選單</ion-title>
+            <ion-title>Menu</ion-title>
           </ion-toolbar>
         </ion-header>
         <ion-content>
           <ion-list>
-            <ion-item id="nav-calendar"><ion-icon name="calendar-outline"></ion-icon>日曆</ion-item>
-            <ion-item id="nav-tasks"><ion-icon name="checkbox-outline"></ion-icon>任務</ion-item>
-            <ion-item id="nav-chat"><ion-icon name="chatbubble-outline"></ion-icon>聊天</ion-item>
-            <ion-item id="nav-family"><ion-icon name="people-outline"></ion-icon>家庭</ion-item>
-            <ion-item id="signOut"><ion-icon name="log-out-outline"></ion-icon>登出</ion-item>
+            <ion-item id="nav-calendar"><ion-icon name="calendar-outline"></ion-icon>Calendar</ion-item>
+            <ion-item id="nav-tasks"><ion-icon name="checkbox-outline"></ion-icon>Tasks</ion-item>
+            <ion-item id="nav-chat"><ion-icon name="chatbubble-outline"></ion-icon>Chat</ion-item>
+            <ion-item id="nav-family"><ion-icon name="people-outline"></ion-icon>Family</ion-item>
+            <ion-item id="signOut"><ion-icon name="log-out-outline"></ion-icon>Sign Out</ion-item>
           </ion-list>
         </ion-content>
       </ion-menu>
@@ -69,18 +69,18 @@
             <ion-buttons slot="start">
               <ion-menu-button></ion-menu-button>
             </ion-buttons>
-            <ion-title>S&S 家庭應用程式 - 日曆</ion-title>
+            <ion-title>S&S Family App - Calendar</ion-title>
           </ion-toolbar>
         </ion-header>
         <ion-content class="ion-padding">
-          <img src="/assets/family-logo.png" alt="家庭標誌" class="family-logo" />
+          <img src="/assets/family-logo.png" alt="Family Logo" class="family-logo" />
           <div class="welcome-message">
-            <h2>您的家庭日曆</h2>
-            <p>查看和管理家庭事件。</p>
+            <h2>Your Family Calendar</h2>
+            <p>View and manage family events.</p>
           </div>
           <ion-card>
             <ion-card-header>
-              <ion-card-title>月曆視圖</ion-card-title>
+              <ion-card-title>Calendar View</ion-card-title>
             </ion-card-header>
             <ion-card-content>
               <ion-datetime></ion-datetime>
@@ -88,19 +88,19 @@
           </ion-card>
           <ion-card>
             <ion-card-header>
-              <ion-card-title>事件列表</ion-card-title>
+              <ion-card-title>Event List</ion-card-title>
             </ion-card-header>
             <ion-card-content>
               <ion-list id="event-list">
                 <ion-item>
-                  <ion-label>載入中...</ion-label>
+                  <ion-label>Loading...</ion-label>
                 </ion-item>
               </ion-list>
             </ion-card-content>
           </ion-card>
           <ion-card>
             <ion-card-header>
-              <ion-card-title>創建事件</ion-card-title>
+              <ion-card-title>Create Event</ion-card-title>
             </ion-card-header>
             <ion-card-content>
               <div id="create-event-root" class="ion-padding"></div>
@@ -110,7 +110,7 @@
         <ion-footer>
           <ion-toolbar>
             <ion-title size="small" class="ion-text-center">
-              © 2025 S&S 家庭應用程式。版權所有。
+              © 2025 S&S Family App. All rights reserved.
             </ion-title>
           </ion-toolbar>
         </ion-footer>
@@ -135,7 +135,7 @@
             end_datetime: endDateTime ? endDateTime.format('YYYY-MM-DD HH') + ':00:00.000Z' : null,
             reminder_datetime: reminderDateTime ? reminderDateTime.format('YYYY-MM-DD HH') + ':00:00.000Z' : null,
           };
-          console.log("正在創建事件:", eventData);
+          console.log("Creating event:", eventData);
           await onSubmit(eventData);
           // Reset form
           setTitle('');
@@ -153,7 +153,7 @@
                     <Input
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      placeholder="輸入事件標題"
+                      placeholder="Enter event title"
                       required
                     />
                   </ion-item>
@@ -167,7 +167,7 @@
                       format="YYYY-MM-DD HH"
                       value={startDateTime}
                       onChange={setStartDateTime}
-                      placeholder="選擇開始時間"
+                      placeholder="Select start time"
                       needConfirm
                       required
                     />
@@ -182,7 +182,7 @@
                       format="YYYY-MM-DD HH"
                       value={endDateTime}
                       onChange={setEndDateTime}
-                      placeholder="選擇結束時間"
+                      placeholder="Select end time"
                       needConfirm
                     />
                   </ion-item>
@@ -196,7 +196,7 @@
                       format="YYYY-MM-DD HH"
                       value={reminderDateTime}
                       onChange={setReminderDateTime}
-                      placeholder="選擇提醒時間"
+                      placeholder="Select reminder time"
                       needConfirm
                     />
                   </ion-item>
@@ -205,7 +205,7 @@
               <ion-row>
                 <ion-col>
                   <Button type="primary" htmlType="submit" block>
-                    創建事件
+                    Create Event
                   </Button>
                 </ion-col>
               </ion-row>
@@ -227,15 +227,15 @@
               body: JSON.stringify(eventData),
             });
             const data = await response.json();
-            console.log("創建事件回應:", data);
+            console.log("Create event response:", data);
             if (!response.ok) {
-              throw new Error(data.error || "無法創建事件");
+              throw new Error(data.error || "Failed to create event");
             }
-            await window.showToast(`事件已創建 (ID: ${data.data.event_id})`, 2000, "success");
+            await window.showToast(`Event created (ID: ${data.data.event_id})`, 2000, "success");
             await window.fetchEvents();
           } catch (error) {
-            console.error("創建事件錯誤:", error);
-            await window.showToast(`無法創建事件: ${error.message}`, 2000, "danger");
+            console.error("Create event error:", error);
+            await window.showToast(`Failed to create event: ${error.message}`, 2000, "danger");
           }
         };
 
@@ -268,7 +268,7 @@
       window.fetchEvents = async function () {
         const token = localStorage.getItem("token") || sessionStorage.getItem("token") || "";
         try {
-          console.log("正在獲取事件列表");
+          console.log("Fetching event list");
           const response = await fetch("/calendar", {
             method: "GET",
             headers: {
@@ -277,28 +277,28 @@
             },
           });
           const data = await response.json();
-          console.log("獲取事件回應:", data);
+          console.log("Fetch events response:", data);
           if (!response.ok) {
-            throw new Error(data.error || "無法獲取事件");
+            throw new Error(data.error || "Failed to fetch events");
           }
 
           const eventList = document.getElementById("event-list");
           eventList.innerHTML = "";
 
           window.events = Array.isArray(data.data.events) ? data.data.events : [];
-          console.log("處理事件數據:", window.events);
+          console.log("Processing event data:", window.events);
 
           if (window.events.length === 0) {
-            eventList.innerHTML = `<ion-item><ion-label>未找到事件</ion-label></ion-item>`;
+            eventList.innerHTML = `<ion-item><ion-label>No events found</ion-label></ion-item>`;
           } else {
             for (const event of window.events) {
               const item = document.createElement("ion-item");
               item.innerHTML = `
                 <ion-label>
                   <h2>${event.title}</h2>
-                  <p>開始: ${new Date(event.start_datetime).toLocaleString()}</p>
-                  ${event.end_datetime ? `<p>結束: ${new Date(event.end_datetime).toLocaleString()}</p>` : ""}
-                  ${event.reminder_datetime ? `<p>提醒: ${new Date(event.reminder_datetime).toLocaleString()}</p>` : ""}
+                  <p>Start: ${new Date(event.start_datetime).toLocaleString()}</p>
+                  ${event.end_datetime ? `<p>End: ${new Date(event.end_datetime).toLocaleString()}</p>` : ""}
+                  ${event.reminder_datetime ? `<p>Reminder: ${new Date(event.reminder_datetime).toLocaleString()}</p>` : ""}
                 </ion-label>
               `;
               eventList.appendChild(item);
@@ -318,23 +318,23 @@
             }));
           }
         } catch (error) {
-          console.error("獲取事件錯誤:", error);
-          await window.showToast(`無法載入事件列表: ${error.message || "伺服器響應異常"}`, 3000, "danger");
+          console.error("Fetch events error:", error);
+          await window.showToast(`Failed to load event list: ${error.message || "Server response error"}`, 3000, "danger");
         }
       };
 
       document.addEventListener("DOMContentLoaded", async () => {
-        console.log("DOM 已載入 calendar.html");
-        console.log("Ionic 版本:", window.Ionic?.version || "未載入");
+        console.log("DOM loaded for calendar.html");
+        console.log("Ionic version:", window.Ionic?.version || "Not loaded");
         const token = localStorage.getItem("token") || sessionStorage.getItem("token") || "";
         if (!token) {
-          console.log("未找到 token，正在跳轉到 /login.html");
+          console.log("No token found, redirecting to /login.html");
           window.location.href = "/login.html";
           return;
         }
-        console.log("找到 token:", token.substring(0, 20) + "...");
+        console.log("Token found:", token.substring(0, 20) + "...");
 
-        // 選單導航
+        // Menu navigation
         const navItems = {
           "nav-calendar": "/calendar.html",
           "nav-tasks": "/tasks.html",
@@ -345,23 +345,23 @@
           const item = document.getElementById(id);
           item?.addEventListener("click", () => {
             const url = navItems[id];
-            console.log(`正在跳轉到 ${url}`);
+            console.log(`Navigating to ${url}`);
             window.location.href = url;
           });
         });
 
-        // 登出
+        // Sign out
         document.getElementById("signOut")?.addEventListener("click", () => {
-          console.log("點擊登出");
+          console.log("Sign out clicked");
           localStorage.removeItem("token");
           sessionStorage.removeItem("token");
-          console.log("已登出，清除 token");
+          console.log("Signed out, token cleared");
           window.location.href = "/login.html";
         });
 
         async function checkFamilyStatus() {
           try {
-            console.log("檢查用戶家庭狀態");
+            console.log("Checking user family status");
             const response = await fetch("/my-families", {
               method: "GET",
               headers: {
@@ -370,38 +370,38 @@
               },
             });
             const data = await response.json();
-            console.log("檢查家庭狀態回應:", JSON.stringify(data, null, 2));
+            console.log("Check family status response:", JSON.stringify(data, null, 2));
             if (!response.ok) {
-              throw new Error(data.error || "無法檢查家庭狀態");
+              throw new Error(data.error || "Failed to check family status");
             }
             return data.success && data.data && data.data.families && data.data.families.length > 0;
           } catch (error) {
-            console.error("檢查家庭狀態錯誤:", error);
-            await window.showToast(`無法檢查家庭狀態: ${error.message}`, 2000, "danger");
+            console.error("Check family status error:", error);
+            await window.showToast(`Failed to check family status: ${error.message}`, 2000, "danger");
             return false;
           }
         }
 
-        // 檢查家庭狀態
+        // Check family status
         const hasFamily = await checkFamilyStatus();
         if (!hasFamily) {
-          await window.showToast("您尚未加入任何家庭，請先創建或加入家庭", 3000, "warning");
+          await window.showToast("You have not joined any family. Please create or join a family first.", 3000, "warning");
           window.location.href = "/family.html";
           return;
         }
 
-        // 載入事件列表
+        // Load event list
         await window.fetchEvents();
       });
     </script>
     <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/serviceworker.js')
-        .then(reg => console.log('Service Worker registered'))
-        .catch(err => console.error('Service Worker registration failed:', err));
-    });
-  }
-</script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/serviceworker.js')
+            .then(reg => console.log('Service Worker registered'))
+            .catch(err => console.error('Service Worker registration failed:', err));
+        });
+      }
+    </script>
   </body>
 </html>

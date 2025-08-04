@@ -31,16 +31,16 @@
       <ion-menu content-id="main-content" side="start">
         <ion-header>
           <ion-toolbar>
-            <ion-title>選單</ion-title>
+            <ion-title>Menu</ion-title>
           </ion-toolbar>
         </ion-header>
         <ion-content>
           <ion-list>
-            <ion-item id="nav-calendar"><ion-icon name="calendar-outline"></ion-icon>日曆</ion-item>
-            <ion-item id="nav-tasks"><ion-icon name="checkbox-outline"></ion-icon>任務</ion-item>
-            <ion-item id="nav-chat"><ion-icon name="chatbubble-outline"></ion-icon>聊天</ion-item>
-            <ion-item id="nav-family"><ion-icon name="people-outline"></ion-icon>家庭</ion-item>
-            <ion-item id="signOut"><ion-icon name="log-out-outline"></ion-icon>登出</ion-item>
+            <ion-item id="nav-calendar"><ion-icon name="calendar-outline"></ion-icon>Calendar</ion-item>
+            <ion-item id="nav-tasks"><ion-icon name="checkbox-outline"></ion-icon>Tasks</ion-item>
+            <ion-item id="nav-chat"><ion-icon name="chatbubble-outline"></ion-icon>Chat</ion-item>
+            <ion-item id="nav-family"><ion-icon name="people-outline"></ion-icon>Family</ion-item>
+            <ion-item id="signOut"><ion-icon name="log-out-outline"></ion-icon>Sign Out</ion-item>
           </ion-list>
         </ion-content>
       </ion-menu>
@@ -50,29 +50,29 @@
             <ion-buttons slot="start">
               <ion-menu-button></ion-menu-button>
             </ion-buttons>
-            <ion-title>S&S 家庭應用程式 - 任務</ion-title>
+            <ion-title>S&S Family App - Tasks</ion-title>
           </ion-toolbar>
         </ion-header>
         <ion-content class="ion-padding">
-          <img src="/assets/family-logo.png" alt="家庭標誌" class="family-logo" />
+          <img src="/assets/family-logo.png" alt="Family Logo" class="family-logo" />
           <div class="welcome-message">
-            <h2>家庭任務</h2>
-            <p>與家人共享任務，保持井然有序。</p>
+            <h2>Family Tasks</h2>
+            <p>Share tasks with family and stay organized.</p>
           </div>
           <!-- Search and Sort -->
           <ion-item class="search-bar">
-            <ion-input id="search" label="搜尋任務" placeholder="搜尋任務..." debounce="300"></ion-input>
-            <ion-select id="sort" slot="end" interface="popover" label="排序" placeholder="排序">
-              <ion-select-option value="due_date_asc">到期日（最早）</ion-select-option>
-              <ion-select-option value="due_date_desc">到期日（最晚）</ion-select-option>
-              <ion-select-option value="priority_desc">優先級（高到低）</ion-select-option>
-              <ion-select-option value="priority_asc">優先級（低到高）</ion-select-option>
+            <ion-input id="search" label="Search Tasks" placeholder="Search tasks..." debounce="300"></ion-input>
+            <ion-select id="sort" slot="end" interface="popover" label="Sort" placeholder="Sort">
+              <ion-select-option value="due_date_asc">Due Date (Earliest)</ion-select-option>
+              <ion-select-option value="due_date_desc">Due Date (Latest)</ion-select-option>
+              <ion-select-option value="priority_desc">Priority (High to Low)</ion-select-option>
+              <ion-select-option value="priority_asc">Priority (Low to High)</ion-select-option>
             </ion-select>
           </ion-item>
           <ion-list id="task_list"></ion-list>
           <ion-card>
             <ion-card-header>
-              <ion-card-title id="form-title">新增任務</ion-card-title>
+              <ion-card-title id="form-title">Add Task</ion-card-title>
             </ion-card-header>
             <ion-card-content>
               <form id="task_form" class="ion-padding">
@@ -85,8 +85,8 @@
                           type="text"
                           name="title"
                           id="title"
-                          label="任務標題"
-                          placeholder="輸入任務標題"
+                          label="Task Title"
+                          placeholder="Enter task title"
                           required
                         ></ion-input>
                       </ion-item>
@@ -98,8 +98,8 @@
                         <ion-textarea
                           name="description"
                           id="description"
-                          label="描述（可選）"
-                          placeholder="輸入任務描述"
+                          label="Description (Optional)"
+                          placeholder="Enter task description"
                         ></ion-textarea>
                       </ion-item>
                     </ion-col>
@@ -107,7 +107,7 @@
                   <ion-row>
                     <ion-col size="12" size-md="6">
                       <ion-item>
-                        <ion-select name="assignee_id" id="assignee_id" label="指派人（可選）" placeholder="選擇家庭成員"></ion-select>
+                        <ion-select name="assignee_id" id="assignee_id" label="Assignee (Optional)" placeholder="Select family member"></ion-select>
                       </ion-item>
                     </ion-col>
                     <ion-col size="12" size-md="6">
@@ -115,7 +115,7 @@
                         <ion-datetime
                           name="due_date"
                           id="due_date"
-                          label="到期日（可選）"
+                          label="Due Date (Optional)"
                           display-format="YYYY-MM-DD"
                         ></ion-datetime>
                       </ion-item>
@@ -124,20 +124,20 @@
                   <ion-row>
                     <ion-col>
                       <ion-item>
-                        <ion-select name="priority" id="priority" label="優先級" value="medium">
-                          <ion-select-option value="low">低</ion-select-option>
-                          <ion-select-option value="medium">中</ion-select-option>
-                          <ion-select-option value="high">高</ion-select-option>
+                        <ion-select name="priority" id="priority" label="Priority" value="medium">
+                          <ion-select-option value="low">Low</ion-select-option>
+                          <ion-select-option value="medium">Medium</ion-select-option>
+                          <ion-select-option value="high">High</ion-select-option>
                         </ion-select>
                       </ion-item>
                     </ion-col>
                   </ion-row>
                   <ion-row>
                     <ion-col size="6">
-                      <ion-button expand="block" type="submit" id="submit_task">新增任務</ion-button>
+                      <ion-button expand="block" type="submit" id="submit_task">Add Task</ion-button>
                     </ion-col>
                     <ion-col size="6">
-                      <ion-button expand="block" fill="outline" id="cancel_edit" style="display: none;">取消編輯</ion-button>
+                      <ion-button expand="block" fill="outline" id="cancel_edit" style="display: none;">Cancel Edit</ion-button>
                     </ion-col>
                   </ion-row>
                 </ion-grid>
@@ -148,7 +148,7 @@
         <ion-footer>
           <ion-toolbar>
             <ion-title size="small" class="ion-text-center">
-              © 2025 S&S 家庭應用程式。版權所有。
+              © 2025 S&S Family App. All rights reserved.
             </ion-title>
           </ion-toolbar>
         </ion-footer>
@@ -156,7 +156,7 @@
     </ion-app>
 
     <script>
-      // 定義 API 基礎 URL，根據環境動態設置
+      // Define API base URL, dynamically set based on environment
       const API_BASE_URL = process.env.NODE_ENV === 'production' 
         ? 'https://api.mysandshome.com' 
         : 'http://localhost:8100';
@@ -172,7 +172,7 @@
         }
         console.log("找到 token:", token.substring(0, 20) + "...");
 
-        // Toast 顯示輔助函數
+        // Toast display helper function
         async function showToast(message, duration, color) {
           if (window.Ionic) {
             const toast = document.createElement("ion-toast");
@@ -186,15 +186,15 @@
           }
         }
 
-        // Alert 確認輔助函數
+        // Alert confirmation helper function
         async function showConfirm(message) {
           return new Promise((resolve) => {
             const alert = document.createElement("ion-alert");
-            alert.header = "確認";
+            alert.header = "Confirm";
             alert.message = message;
             alert.buttons = [
-              { text: "取消", role: "cancel", handler: () => resolve(false) },
-              { text: "確定", handler: () => resolve(true) },
+              { text: "Cancel", role: "cancel", handler: () => resolve(false) },
+              { text: "Confirm", handler: () => resolve(true) },
             ];
             document.body.appendChild(alert);
             alert.present();
@@ -214,14 +214,14 @@
             const data = await response.json();
             console.log("檢查家庭狀態回應:", JSON.stringify(data, null, 2));
             if (!response.ok) {
-              throw new Error(data.error || "無法檢查家庭狀態");
+              throw new Error(data.error || "Failed to check family status");
             }
             const hasFamily = Array.isArray(data.data?.families) && data.data.families.length > 0;
             const familyId = hasFamily ? data.data.families[0].id : null;
             return { hasFamily, familyId };
           } catch (error) {
             console.error("檢查家庭狀態錯誤:", error);
-            await showToast(`無法檢查家庭狀態: ${error.message}`, 2000, "danger");
+            await showToast(`Failed to check family status: ${error.message}`, 2000, "danger");
             return { hasFamily: false, familyId: null };
           }
         }
@@ -236,13 +236,13 @@
         const searchInput = document.getElementById("search");
         const sortSelect = document.getElementById("sort");
 
-        // 檢查家庭狀態
+        // Check family status
         const { hasFamily, familyId } = await checkFamilyStatus();
         if (!hasFamily) {
-          await showToast("您尚未加入任何家庭，請先創建或加入家庭", 3000, "warning");
-          taskList.innerHTML = `<ion-item><ion-label>請先創建或加入家庭以查看和管理任務</ion-label></ion-item>`;
+          await showToast("You have not joined any family. Please create or join a family first.", 3000, "warning");
+          taskList.innerHTML = `<ion-item><ion-label>Please create or join a family to view and manage tasks</ion-label></ion-item>`;
           submitTaskButton.disabled = true;
-          assigneeSelect.innerHTML = '<ion-select-option value="">無</ion-select-option>';
+          assigneeSelect.innerHTML = '<ion-select-option value="">None</ion-select-option>';
           return;
         } else {
           console.log("用戶已加入家庭，家庭 ID:", familyId);
@@ -262,9 +262,9 @@
             const data = await response.json();
             console.log("獲取家庭成員回應:", JSON.stringify(data, null, 2));
             if (!response.ok) {
-              throw new Error(data.error || "無法獲取家庭成員");
+              throw new Error(data.error || "Failed to fetch family members");
             }
-            assigneeSelect.innerHTML = '<ion-select-option value="">無</ion-select-option>';
+            assigneeSelect.innerHTML = '<ion-select-option value="">None</ion-select-option>';
             if (Array.isArray(data.data?.members)) {
               data.data.members.forEach((member) => {
                 const option = document.createElement("ion-select-option");
@@ -275,7 +275,7 @@
             }
           } catch (error) {
             console.error("獲取家庭成員錯誤:", error);
-            await showToast(`無法載入家庭成員: ${error.message}`, 2000, "danger");
+            await showToast(`Failed to load family members: ${error.message}`, 2000, "danger");
           }
         }
 
@@ -297,18 +297,18 @@
             console.log("獲取任務回應 (完整):", JSON.stringify(data, null, 2));
             if (!response.ok) {
               if (response.status === 401) {
-                await showToast("認證失敗，請重新登錄", 3000, "danger");
+                await showToast("Authentication failed, please log in again", 3000, "danger");
                 window.location.href = "/login.html";
                 return [];
               }
-              throw new Error(data.error || "無法獲取任務");
+              throw new Error(data.error || "Failed to fetch tasks");
             }
             const tasks = Array.isArray(data.data?.tasks) ? data.data.tasks : [];
             console.log("解析後的任務列表:", tasks);
             return tasks;
           } catch (error) {
             console.error("獲取任務錯誤:", error);
-            await showToast(`無法載入任務列表: ${error.message}`, 2000, "danger");
+            await showToast(`Failed to load task list: ${error.message}`, 2000, "danger");
             return [];
           }
         }
@@ -320,8 +320,8 @@
             console.log("渲染任務數量:", tasks.length);
             taskList.innerHTML = "";
             if (tasks.length === 0) {
-              console.log("任務列表為空，顯示 '未找到任務'");
-              taskList.innerHTML = `<ion-item><ion-label>未找到任務</ion-label></ion-item>`;
+              console.log("任務列表為空，顯示 'No tasks found'");
+              taskList.innerHTML = `<ion-item><ion-label>No tasks found</ion-label></ion-item>`;
             } else {
               tasks.forEach((task) => {
                 console.log("渲染任務:", task);
@@ -329,15 +329,15 @@
                 item.className = task.status === "completed" ? "completed" : "";
                 item.innerHTML = `
                   <ion-avatar slot="start">
-                    <img src="/assets/user-${task.assignee_id || 'default'}.png" alt="${task.assignee_username || '無指派人'}" onerror="this.src='/assets/user-default.png'" />
+                    <img src="/assets/user-${task.assignee_id || 'default'}.png" alt="${task.assignee_username || 'No assignee'}" onerror="this.src='/assets/user-default.png'" />
                   </ion-avatar>
                   <ion-label>
                     <h2>${task.title}</h2>
-                    <p>${task.description || "無描述"}</p>
-                    <p>指派人: ${task.assignee_username || "無"}</p>
-                    <p>到期日: ${task.due_date ? new Date(task.due_date).toLocaleDateString() : "無到期日"}</p>
-                    <p>優先級: ${task.priority === "low" ? "低" : task.priority === "medium" ? "中" : "高"}</p>
-                    <p>狀態: ${task.status === "pending" ? "待處理" : "已完成"}</p>
+                    <p>${task.description || "No description"}</p>
+                    <p>Assignee: ${task.assignee_username || "None"}</p>
+                    <p>Due Date: ${task.due_date ? new Date(task.due_date).toLocaleDateString() : "No due date"}</p>
+                    <p>Priority: ${task.priority === "low" ? "Low" : task.priority === "medium" ? "Medium" : "High"}</p>
+                    <p>Status: ${task.status === "pending" ? "Pending" : "Completed"}</p>
                   </ion-label>
                   <ion-button slot="end" fill="clear" id="toggle-${task.id}">
                     <ion-icon name="${task.status === 'pending' ? 'checkmark-circle-outline' : 'refresh-circle-outline'}"></ion-icon>
@@ -357,7 +357,7 @@
             }
           } catch (error) {
             console.error("渲染任務錯誤:", error);
-            await showToast("渲染任務失敗，請重試", 2000, "danger");
+            await showToast("Failed to render tasks, please try again", 2000, "danger");
           }
         }
 
@@ -377,17 +377,17 @@
             console.log("切換任務回應:", JSON.stringify(data, null, 2));
             if (!response.ok) {
               if (response.status === 401) {
-                await showToast("認證失敗，請重新登錄", 3000, "danger");
+                await showToast("Authentication failed, please log in again", 3000, "danger");
                 window.location.href = "/login.html";
                 return;
               }
-              throw new Error(data.error || "無法更新任務");
+              throw new Error(data.error || "Failed to update task");
             }
-            await showToast(`任務標記為${newStatus === "pending" ? "待處理" : "已完成"}`, 2000, "success");
+            await showToast(`Task marked as ${newStatus === "pending" ? "Pending" : "Completed"}`, 2000, "success");
             await renderTasks(searchInput.value, sortSelect.value);
           } catch (error) {
             console.error("切換任務錯誤:", error);
-            await showToast(`無法更新任務: ${error.message}`, 2000, "danger");
+            await showToast(`Failed to update task: ${error.message}`, 2000, "danger");
           }
         }
 
@@ -399,14 +399,14 @@
           document.getElementById("assignee_id").value = task.assignee_id || "";
           document.getElementById("due_date").value = task.due_date || "";
           document.getElementById("priority").value = task.priority;
-          formTitle.textContent = "編輯任務";
-          submitTaskButton.textContent = "保存任務";
+          formTitle.textContent = "Edit Task";
+          submitTaskButton.textContent = "Save Task";
           cancelEditButton.style.display = "block";
           window.scrollTo({ top: 0, behavior: "smooth" });
         }
 
         async function deleteTask(taskId) {
-          const confirmed = await showConfirm("確定要刪除此任務嗎？");
+          const confirmed = await showConfirm("Are you sure you want to delete this task?");
           if (!confirmed) return;
           try {
             console.log(`刪除任務 ${taskId}`);
@@ -421,25 +421,25 @@
             console.log("刪除任務回應:", JSON.stringify(data, null, 2));
             if (!response.ok) {
               if (response.status === 401) {
-                await showToast("認證失敗，請重新登錄", 3000, "danger");
+                await showToast("Authentication failed, please log in again", 3000, "danger");
                 window.location.href = "/login.html";
                 return;
               }
-              throw new Error(data.error || "無法刪除任務");
+              throw new Error(data.error || "Failed to delete task");
             }
-            await showToast("任務已刪除", 2000, "success");
+            await showToast("Task deleted", 2000, "success");
             await renderTasks(searchInput.value, sortSelect.value);
           } catch (error) {
             console.error("刪除任務錯誤:", error);
-            await showToast(`無法刪除任務: ${error.message}`, 2000, "danger");
+            await showToast(`Failed to delete task: ${error.message}`, 2000, "danger");
           }
         }
 
         function resetForm() {
           taskForm.reset();
           taskIdInput.value = "";
-          formTitle.textContent = "新增任務";
-          submitTaskButton.textContent = "新增任務";
+          formTitle.textContent = "Add Task";
+          submitTaskButton.textContent = "Add Task";
           cancelEditButton.style.display = "none";
         }
 
@@ -470,15 +470,15 @@
           const priority = formData.get("priority")?.toString() || "medium";
 
           if (!title) {
-            await showToast("任務標題為必填", 2000, "danger");
+            await showToast("Task title is required", 2000, "danger");
             return;
           }
           if (title.length > 100) {
-            await showToast("任務標題必須為100個字符或更少", 2000, "danger");
+            await showToast("Task title must be 100 characters or less", 2000, "danger");
             return;
           }
           if (!["low", "medium", "high"].includes(priority)) {
-            await showToast("無效的優先級值", 2000, "danger");
+            await showToast("Invalid priority value", 2000, "danger");
             return;
           }
 
@@ -508,30 +508,30 @@
             console.log(`任務${taskId ? "更新" : "創建"}回應:`, JSON.stringify(data, null, 2));
             if (!response.ok) {
               if (response.status === 401) {
-                await showToast("認證失敗，請重新登錄", 3000, "danger");
+                await showToast("Authentication failed, please log in again", 3000, "danger");
                 window.location.href = "/login.html";
                 return;
               }
-              throw new Error(data.error || `無法${taskId ? "更新" : "創建"}任務`);
+              throw new Error(data.error || `Failed to ${taskId ? "update" : "create"} task`);
             }
-            await showToast(`任務已${taskId ? "更新" : "創建"} (ID: ${data.data?.task_id})`, 2000, "success");
+            await showToast(`Task ${taskId ? "updated" : "created"} (ID: ${data.data?.task_id})`, 2000, "success");
             resetForm();
             await renderTasks(searchInput.value, sortSelect.value);
           } catch (error) {
             console.error(`創建/更新任務錯誤:`, error);
-            await showToast(`無法${taskId ? "更新" : "創建"}任務: ${error.message}`, 2000, "danger");
+            await showToast(`Failed to ${taskId ? "update" : "create"} task: ${error.message}`, 2000, "danger");
           }
         });
       });
     </script>
     <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/serviceworker.js')
-        .then(reg => console.log('Service Worker registered'))
-        .catch(err => console.error('Service Worker registration failed:', err));
-    });
-  }
-</script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/serviceworker.js')
+            .then(reg => console.log('Service Worker registered'))
+            .catch(err => console.error('Service Worker registration failed:', err));
+        });
+      }
+    </script>
   </body>
 </html>

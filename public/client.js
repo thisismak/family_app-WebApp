@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   console.log("找到 token:", token.substring(0, 20) + "...");
 
-  // 選單導航
+  // Menu navigation
   const navItems = {
     "nav-calendar": "/calendar.html",
     "nav-tasks": "/tasks.html",
@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
-  // 登出
+  // Sign out
   document.getElementById("signOut")?.addEventListener("click", () => {
     console.log("點擊登出");
     localStorage.removeItem("token");
@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.location.href = "/login.html";
   });
 
-  // Toast 顯示輔助函數
+  // Toast display helper function
   async function showToast(message, duration, color) {
     if (window.Ionic) {
       const toast = document.createElement("ion-toast");
@@ -62,14 +62,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.log("檢查家庭狀態回應:", data);
       if (!response.ok) {
         console.error("家庭狀態請求失敗:", data.error);
-        throw new Error(data.error || "無法檢查家庭狀態");
+        throw new Error(data.error || "Failed to check family status");
       }
       const hasFamily = data.success && Array.isArray(data.data.families) && data.data.families.length > 0;
       console.log("hasFamily 結果:", hasFamily);
       return hasFamily;
     } catch (error) {
       console.error("檢查家庭狀態錯誤:", error);
-      await showToast(`無法檢查家庭狀態: ${error.message}`, 2000, "danger");
+      await showToast(`Failed to check family status: ${error.message}`, 2000, "danger");
       return false;
     }
   }
@@ -87,16 +87,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       const data = await response.json();
       console.log("獲取用戶回應:", data);
       if (!response.ok) {
-        throw new Error(data.error || "無法獲取用戶資料");
+        throw new Error(data.error || "Failed to fetch user data");
       }
       return {
         username: data.data.username || "Guest",
-        email: data.data.email || "無電子郵件",
+        email: data.data.email || "No email",
         user_id: data.data.user_id,
       };
     } catch (err) {
       console.error("獲取用戶錯誤:", err);
-      return { username: "Guest", email: "未登入", user_id: null };
+      return { username: "Guest", email: "Not logged in", user_id: null };
     }
   }
 
@@ -104,12 +104,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   const messageForm = document.getElementById("message_form");
   const submitMessageButton = document.getElementById("submit_message");
 
-  // 檢查家庭狀態
+  // Check family status
   const hasFamily = await checkFamilyStatus();
   console.log("最終 hasFamily 值:", hasFamily);
   if (!hasFamily) {
-    await showToast("您尚未加入任何家庭，請先創建或加入家庭", 3000, "warning");
-    chatList.innerHTML = `<ion-item><ion-label>請先創建或加入家庭以使用聊天功能</ion-label></ion-item>`;
+    await showToast("You have not joined any family. Please create or join a family first.", 3000, "warning");
+    chatList.innerHTML = `<ion-item><ion-label>Please create or join a family to use the chat feature</ion-label></ion-item>`;
     submitMessageButton.disabled = true;
     return;
   } else {
@@ -117,7 +117,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     chatList.innerHTML = "";
   }
 
-  // 初始化 Socket.IO
+  // Initialize Socket.IO
   const socket = io("http://localhost:8100", {
     auth: { token }
   });
@@ -129,14 +129,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   socket.on("connect_error", (error) => {
     console.error("Socket.IO 連接錯誤:", error);
-    showToast("無法連接到聊天服務器", 2000, "danger");
+    showToast("Unable to connect to chat server", 2000, "danger");
   });
 
   socket.on("load_messages", async (messages) => {
     const user = await fetchUser();
     chatList.innerHTML = "";
     if (messages.length === 0) {
-      chatList.innerHTML = `<ion-item><ion-label>未找到訊息</ion-label></ion-item>`;
+      chatList.innerHTML = `<ion-item><ion-label>No messages found</ion-label></ion-item>`;
     } else {
       messages.forEach((message) => {
         const div = document.createElement("div");
@@ -193,7 +193,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.log("訊息表單提交:", { content });
 
     if (!content) {
-      await showToast("訊息內容為必填", 2000, "danger");
+      await showToast("Message content is required", 2000, "danger");
       return;
     }
 
@@ -207,10 +207,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       };
       socket.emit("message", message);
       form.reset();
-      await showToast("訊息已發送", 2000, "success");
+      await showToast("Message sent", 2000, "success");
     } catch (error) {
       console.error("發送訊息錯誤:", error);
-      await showToast(`無法發送訊息: ${error.message}`, 2000, "danger");
+      await showToast(`Failed to send message: ${error.message}`, 2000, "danger");
     }
   });
 });

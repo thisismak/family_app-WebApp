@@ -52,16 +52,16 @@
       <ion-menu content-id="main-content" side="start">
         <ion-header>
           <ion-toolbar>
-            <ion-title>選單</ion-title>
+            <ion-title>Menu</ion-title>
           </ion-toolbar>
         </ion-header>
         <ion-content>
           <ion-list>
-            <ion-item id="nav-calendar"><ion-icon name="calendar-outline"></ion-icon>日曆</ion-item>
-            <ion-item id="nav-tasks"><ion-icon name="checkbox-outline"></ion-icon>任務</ion-item>
-            <ion-item id="nav-chat"><ion-icon name="chatbubble-outline"></ion-icon>聊天</ion-item>
-            <ion-item id="nav-family"><ion-icon name="people-outline"></ion-icon>家庭</ion-item>
-            <ion-item id="signOut"><ion-icon name="log-out-outline"></ion-icon>登出</ion-item>
+            <ion-item id="nav-calendar"><ion-icon name="calendar-outline"></ion-icon>Calendar</ion-item>
+            <ion-item id="nav-tasks"><ion-icon name="checkbox-outline"></ion-icon>Tasks</ion-item>
+            <ion-item id="nav-chat"><ion-icon name="chatbubble-outline"></ion-icon>Chat</ion-item>
+            <ion-item id="nav-family"><ion-icon name="people-outline"></ion-icon>Family</ion-item>
+            <ion-item id="signOut"><ion-icon name="log-out-outline"></ion-icon>Sign Out</ion-item>
           </ion-list>
         </ion-content>
       </ion-menu>
@@ -71,18 +71,18 @@
             <ion-buttons slot="start">
               <ion-menu-button></ion-menu-button>
             </ion-buttons>
-            <ion-title>S&S 家庭應用程式 - 聊天</ion-title>
+            <ion-title>S&S Family App - Chat</ion-title>
           </ion-toolbar>
         </ion-header>
         <ion-content class="ion-padding">
-          <img src="/assets/family-logo.png" alt="家庭標誌" class="family-logo" />
+          <img src="/assets/family-logo.png" alt="Family Logo" class="family-logo" />
           <div class="welcome-message">
-            <h2>家庭聊天</h2>
-            <p>與您的家人保持聯繫。</p>
+            <h2>Family Chat</h2>
+            <p>Stay connected with your family.</p>
           </div>
           <ion-card>
             <ion-card-header>
-              <ion-card-title>發送訊息</ion-card-title>
+              <ion-card-title>Send Message</ion-card-title>
             </ion-card-header>
             <ion-card-content>
               <form id="message_form" class="ion-padding">
@@ -93,9 +93,9 @@
                         <ion-textarea
                           name="content"
                           id="content"
-                          placeholder="輸入您的訊息"
+                          placeholder="Enter your message"
                           required
-                          label="訊息"
+                          label="Message"
                           label-placement="stacked"
                         ></ion-textarea>
                       </ion-item>
@@ -103,7 +103,7 @@
                   </ion-row>
                   <ion-row>
                     <ion-col>
-                      <ion-button expand="block" type="submit" id="submit_message">發送</ion-button>
+                      <ion-button expand="block" type="submit" id="submit_message">Send</ion-button>
                     </ion-col>
                   </ion-row>
                 </ion-grid>
@@ -115,7 +115,7 @@
         <ion-footer>
           <ion-toolbar>
             <ion-title size="small" class="ion-text-center">
-              © 2025 S&S 家庭應用程式。版權所有。
+              © 2025 S&S Family App. All rights reserved.
             </ion-title>
           </ion-toolbar>
         </ion-footer>
@@ -126,7 +126,7 @@
     <script src="/client.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        // 選單導航
+        // Menu navigation
         const navItems = {
           "nav-calendar": "/calendar.html",
           "nav-tasks": "/tasks.html",
@@ -142,7 +142,7 @@
           });
         });
 
-        // 登出
+        // Sign out
         document.getElementById("signOut")?.addEventListener("click", () => {
           console.log("點擊登出");
           localStorage.removeItem("token");
@@ -153,13 +153,13 @@
       });
     </script>
     <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/serviceworker.js')
-        .then(reg => console.log('Service Worker registered'))
-        .catch(err => console.error('Service Worker registration failed:', err));
-    });
-  }
-</script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/serviceworker.js')
+            .then(reg => console.log('Service Worker registered'))
+            .catch(err => console.error('Service Worker registration failed:', err));
+        });
+      }
+    </script>
   </body>
 </html>

@@ -23,16 +23,16 @@
       <ion-menu content-id="main-content" side="start">
         <ion-header>
           <ion-toolbar>
-            <ion-title>選單</ion-title>
+            <ion-title>Menu</ion-title>
           </ion-toolbar>
         </ion-header>
         <ion-content>
           <ion-list>
-            <ion-item id="nav-calendar"><ion-icon name="calendar-outline"></ion-icon>日曆</ion-item>
-            <ion-item id="nav-tasks"><ion-icon name="checkbox-outline"></ion-icon>任務</ion-item>
-            <ion-item id="nav-chat"><ion-icon name="chatbubble-outline"></ion-icon>聊天</ion-item>
-            <ion-item id="nav-family"><ion-icon name="people-outline"></ion-icon>家庭</ion-item>
-            <ion-item id="signOut"><ion-icon name="log-out-outline"></ion-icon>登出</ion-item>
+            <ion-item id="nav-calendar"><ion-icon name="calendar-outline"></ion-icon>Calendar</ion-item>
+            <ion-item id="nav-tasks"><ion-icon name="checkbox-outline"></ion-icon>Tasks</ion-item>
+            <ion-item id="nav-chat"><ion-icon name="chatbubble-outline"></ion-icon>Chat</ion-item>
+            <ion-item id="nav-family"><ion-icon name="people-outline"></ion-icon>Family</ion-item>
+            <ion-item id="signOut"><ion-icon name="log-out-outline"></ion-icon>Sign Out</ion-item>
           </ion-list>
         </ion-content>
       </ion-menu>
@@ -42,30 +42,30 @@
             <ion-buttons slot="start">
               <ion-menu-button></ion-menu-button>
             </ion-buttons>
-            <ion-title>S&S 家庭應用程式</ion-title>
+            <ion-title>S&S Family App</ion-title>
           </ion-toolbar>
         </ion-header>
         <ion-content class="ion-padding">
-          <img src="/assets/family-logo.png" alt="家庭標誌" class="family-logo" />
+          <img src="/assets/family-logo.png" alt="Family Logo" class="family-logo" />
           <div class="welcome-message">
-            <h2>管理您的家庭</h2>
-            <p>用愛建立您的家庭圈。</p>
+            <h2>Manage Your Family</h2>
+            <p>Build your family circle with love.</p>
           </div>
           <ion-card>
             <ion-card-header>
-              <ion-card-title>我的家庭</ion-card-title>
+              <ion-card-title>My Families</ion-card-title>
             </ion-card-header>
             <ion-card-content>
               <ion-list id="family-list">
                 <ion-item>
-                  <ion-label>載入中...</ion-label>
+                  <ion-label>Loading...</ion-label>
                 </ion-item>
               </ion-list>
             </ion-card-content>
           </ion-card>
           <ion-card>
             <ion-card-header>
-              <ion-card-title>創建家庭</ion-card-title>
+              <ion-card-title>Create Family</ion-card-title>
             </ion-card-header>
             <ion-card-content>
               <form id="create_family_form" class="ion-padding">
@@ -77,8 +77,8 @@
                           type="text"
                           name="name"
                           id="family_name"
-                          label="家庭名稱"
-                          placeholder="輸入家庭名稱"
+                          label="Family Name"
+                          placeholder="Enter family name"
                           required
                         ></ion-input>
                       </ion-item>
@@ -86,7 +86,7 @@
                   </ion-row>
                   <ion-row>
                     <ion-col>
-                      <ion-button expand="block" type="submit">創建家庭</ion-button>
+                      <ion-button expand="block" type="submit">Create Family</ion-button>
                     </ion-col>
                   </ion-row>
                 </ion-grid>
@@ -95,7 +95,7 @@
           </ion-card>
           <ion-card>
             <ion-card-header>
-              <ion-card-title>加入家庭</ion-card-title>
+              <ion-card-title>Join Family</ion-card-title>
             </ion-card-header>
             <ion-card-content>
               <form id="join_family_form" class="ion-padding">
@@ -107,8 +107,8 @@
                           type="number"
                           name="family_id"
                           id="family_id"
-                          label="家庭 ID"
-                          placeholder="輸入家庭 ID"
+                          label="Family ID"
+                          placeholder="Enter family ID"
                           required
                         ></ion-input>
                       </ion-item>
@@ -116,7 +116,7 @@
                   </ion-row>
                   <ion-row>
                     <ion-col>
-                      <ion-button expand="block" type="submit">加入家庭</ion-button>
+                      <ion-button expand="block" type="submit">Join Family</ion-button>
                     </ion-col>
                   </ion-row>
                 </ion-grid>
@@ -127,7 +127,7 @@
         <ion-footer>
           <ion-toolbar>
             <ion-title size="small" class="ion-text-center">
-              © 2025 S&S 家庭應用程式。版權所有。
+              © 2025 S&S Family App. All rights reserved.
             </ion-title>
           </ion-toolbar>
         </ion-footer>
@@ -146,7 +146,7 @@
         }
         console.log("找到 token:", token.substring(0, 20) + "...");
 
-        // 選單導航
+        // Menu navigation
         const navItems = {
           "nav-calendar": "/calendar.html",
           "nav-tasks": "/tasks.html",
@@ -162,7 +162,7 @@
           });
         });
 
-        // 登出
+        // Sign out
         document.getElementById("signOut")?.addEventListener("click", () => {
           console.log("點擊登出");
           localStorage.removeItem("token");
@@ -171,7 +171,7 @@
           window.location.href = "/login.html";
         });
 
-        // Toast 顯示輔助函數
+        // Toast display helper function
         async function showToast(message, duration, color) {
           if (window.Ionic) {
             const toast = document.createElement("ion-toast");
@@ -185,8 +185,8 @@
           }
         }
 
-        // 獲取當前用戶信息
-        let currentUsername = "未知用戶";
+        // Fetch current user information
+        let currentUsername = "Unknown User";
         async function fetchUser() {
           try {
             console.log("正在獲取當前用戶信息");
@@ -200,12 +200,12 @@
             const data = await response.json();
             console.log("獲取用戶回應:", JSON.stringify(data, null, 2));
             if (!response.ok) {
-              throw new Error(data.error || "無法獲取用戶信息");
+              throw new Error(data.error || "Failed to fetch user information");
             }
-            currentUsername = data.data.username || "未知用戶";
+            currentUsername = data.data.username || "Unknown User";
           } catch (error) {
             console.error("獲取用戶錯誤:", error);
-            await showToast(`無法載入用戶信息: ${error.message || '伺服器響應異常'}`, 3000, "danger");
+            await showToast(`Failed to load user information: ${error.message || 'Server response error'}`, 3000, "danger");
           }
         }
 
@@ -222,17 +222,17 @@
             const data = await response.json();
             console.log("獲取家庭回應:", JSON.stringify(data, null, 2));
             if (!response.ok) {
-              throw new Error(data.error || "無法獲取家庭");
+              throw new Error(data.error || "Failed to fetch families");
             }
 
             const familyList = document.getElementById("family-list");
-            familyList.innerHTML = ""; // 清空列表
+            familyList.innerHTML = ""; // Clear the list
 
             const families = data.success && data.data && Array.isArray(data.data.families) ? data.data.families : [];
             console.log("處理家庭數據:", families);
 
             if (families.length === 0) {
-              familyList.innerHTML = `<ion-item><ion-label>未找到家庭</ion-label></ion-item>`;
+              familyList.innerHTML = `<ion-item><ion-label>No families found</ion-label></ion-item>`;
             } else {
               for (const family of families) {
                 let members = [];
@@ -248,7 +248,7 @@
                   const memberData = await memberResponse.json();
                   console.log(`家庭 ${family.id} 的成員回應:`, memberData);
                   if (!memberResponse.ok) {
-                    throw new Error(memberData.error || "無法獲取成員");
+                    throw new Error(memberData.error || "Failed to fetch members");
                   }
                   members = Array.isArray(memberData.data.members) ? memberData.data.members : [];
                 } catch (error) {
@@ -260,9 +260,9 @@
                 item.innerHTML = `
                   <ion-label>
                     <h2>${family.name}</h2>
-                    <p>當前成員名稱: ${currentUsername}</p>
-                    <p>ID: ${family.id} | 角色: ${family.role || '擁有者'}</p>
-                    <p>家庭成員: ${members.length > 0 ? members.map(m => m.username).join(', ') : '未找到成員'}</p>
+                    <p>Current Member: ${currentUsername}</p>
+                    <p>ID: ${family.id} | Role: ${family.role || 'Owner'}</p>
+                    <p>Family Members: ${members.length > 0 ? members.map(m => m.username).join(', ') : 'No members found'}</p>
                   </ion-label>
                 `;
                 familyList.appendChild(item);
@@ -270,11 +270,11 @@
             }
           } catch (error) {
             console.error("獲取家庭錯誤:", error);
-            await showToast(`無法載入家庭列表: ${error.message || '伺服器響應異常'}`, 3000, "danger");
+            await showToast(`Failed to load family list: ${error.message || 'Server response error'}`, 3000, "danger");
           }
         }
 
-        // 獲取用戶信息並載入家庭列表
+        // Fetch user information and load family list
         await fetchUser();
         await fetchFamilies();
 
@@ -297,21 +297,21 @@
             const data = await response.json();
             console.log("創建家庭回應:", data);
             if (!response.ok) {
-              throw new Error(data.error || "無法創建家庭");
+              throw new Error(data.error || "Failed to create family");
             }
-            await showToast(`家庭已創建 (ID: ${data.data.family_id})`, 2000, "success");
+            await showToast(`Family created (ID: ${data.data.family_id})`, 2000, "success");
             form.reset();
-            await fetchFamilies(); // 刷新列表
+            await fetchFamilies(); // Refresh list
           } catch (error) {
             console.error("創建家庭錯誤:", error);
             await showToast(
               error.message === "User is already in a family"
-                ? "您已經加入一個家庭，無法創建新家庭"
-                : `無法創建家庭: ${error.message}`,
+                ? "You are already in a family and cannot create a new one"
+                : `Failed to create family: ${error.message}`,
               2000,
               "danger"
             );
-            await fetchFamilies(); // 刷新列表
+            await fetchFamilies(); // Refresh list
           }
         });
 
@@ -334,33 +334,33 @@
             const data = await response.json();
             console.log("加入家庭回應:", data);
             if (!response.ok) {
-              throw new Error(data.error || "無法加入家庭");
+              throw new Error(data.error || "Failed to join family");
             }
-            await showToast("已加入家庭", 2000, "success");
+            await showToast("Joined family successfully", 2000, "success");
             form.reset();
-            await fetchFamilies(); // 刷新列表
+            await fetchFamilies(); // Refresh list
           } catch (error) {
             console.error("加入家庭錯誤:", error);
             await showToast(
               error.message === "User is already in a family"
-                ? "您已經加入一個家庭，無法加入其他家庭"
-                : `無法加入家庭: ${error.message}`,
+                ? "You are already in a family and cannot join another"
+                : `Failed to join family: ${error.message}`,
               2000,
               "danger"
             );
-            await fetchFamilies(); // 刷新列表
+            await fetchFamilies(); // Refresh list
           }
         });
       });
     </script>
     <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/serviceworker.js')
-        .then(reg => console.log('Service Worker registered'))
-        .catch(err => console.error('Service Worker registration failed:', err));
-    });
-  }
-</script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/serviceworker.js')
+            .then(reg => console.log('Service Worker registered'))
+            .catch(err => console.error('Service Worker registration failed:', err));
+        });
+      }
+    </script>
   </body>
 </html>
