@@ -76,6 +76,7 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/mysandshome.com/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+    ssl_ecdh_curve prime256v1:secp384r1:secp521r1;
 
     # 啟用訪問日誌
     access_log /var/log/nginx/family-app-access.log;
