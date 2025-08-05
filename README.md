@@ -62,15 +62,17 @@ node dist/server.js
 curl http://localhost:8100
 ## 建立nginx的family網站配置文件
 sudo vi /etc/nginx/conf.d/family-app.conf
+# HTTP 重定向：將 mysandshome.com 和 www.mysandshome.com 重定向到 https://www.mysandshome.com
 server {
     listen 80;
     server_name mysandshome.com www.mysandshome.com;
-    return 301 https://$host$request_uri; # 自動重定向到 HTTPS
+    return 301 https://www.mysandshome.com$request_uri;
 }
 
+# HTTPS 主服務器塊，僅處理 www.mysandshome.com
 server {
     listen 443 ssl;
-    server_name mysandshome.com www.mysandshome.com;
+    server_name www.mysandshome.com;
 
     ssl_certificate /etc/letsencrypt/live/mysandshome.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/mysandshome.com/privkey.pem;
@@ -83,7 +85,7 @@ server {
     # 啟用錯誤日誌
     error_log /var/log/nginx/family-app-error.log;
 
-    # 阻止無效請求（WordPress 掃描和未知 JS 文件）
+    # 阻止無效請求
     location ~* (wp-admin|wordpress|twint_ch\.js|lkk_ch\.js) {
         return 403;
     }
@@ -102,14 +104,14 @@ server {
         access_log off;
     }
 
-    # Digital Asset Links for TWA (Google Play Store)
+    # Digital Asset Links for TWA
     location /.well-known/ {
         root /var/www/family-app/public;
         expires off;
         access_log off;
     }
 
-    # 靜態檔案（HTML、CSS、JS、圖片等）
+    # 靜態檔案
     location ~* \.(html|css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
         root /var/www/family-app/public;
         expires 30d;
@@ -135,6 +137,20 @@ server {
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
     }
+}
+
+# HTTPS 重定向：將 mysandshome.com 重定向到 www.mysandshome.com
+server {
+    listen 443 ssl;
+    server_name mysandshome.com;
+
+    ssl_certificate /etc/letsencrypt/live/mysandshome.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/mysandshome.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+    ssl_ecdh_curve prime256v1:secp384r1:secp521r1;
+
+    return 301 https://www.mysandshome.com$request_uri;
 }
 ## 檢查nginx的配置是否正常
 sudo nginx -t
