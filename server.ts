@@ -9,6 +9,8 @@ import jwt from 'jsonwebtoken';
 import path from 'path';
 import dotenv from 'dotenv';
 import morgan from 'morgan';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
 dotenv.config();
 
@@ -60,7 +62,7 @@ async function initDb(): Promise<mysql.Pool> {
     });
     console.log('MySQL connected');
 
-    // Create tables one by one to ensure correct order for foreign key dependencies
+    // Create tables
     await db.query(`
       CREATE TABLE IF NOT EXISTS user (
         id INTEGER PRIMARY KEY AUTO_INCREMENT,
@@ -136,6 +138,17 @@ async function initDb(): Promise<mysql.Pool> {
       )
     `);
 
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id INTEGER PRIMARY KEY AUTO_INCREMENT,
+        user_id INTEGER NOT NULL,
+        token VARCHAR(512) NOT NULL,
+        expires_at DATETIME NOT NULL,
+        used BOOLEAN NOT NULL DEFAULT FALSE,
+        FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
+      )
+    `);
+
     console.log('All tables created successfully');
     return db;
   } catch (error) {
@@ -164,6 +177,108 @@ const authenticate = async (req: AuthRequest, res: Response, next: NextFunction)
 const sendResponse = (res: Response, status: number, success: boolean, data?: any, error?: string) => {
   res.status(status).json({ success, data, error });
 };
+
+// Promisify exec for async/await
+const execPromise = promisify(exec);
+
+// Forgot Password Route
+app.post('/forgot-password', async (req: Request, res: Response) => {
+  const { email } = req.body;
+  console.log('Forgot password attempt:', { email });
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return sendResponse(res, 400, false, null, 'Valid email is required');
+  }
+
+  try {
+    const db = await initDb();
+    const [rows] = await db.query('SELECT id FROM user WHERE email = ?', [email]);
+    const user = (rows as any[])[0];
+    if (!user) {
+      console.log('User not found for email:', email);
+      return sendResponse(res, 404, false, null, 'User not found');
+    }
+
+    const resetToken = jwt.sign({ userId: user.id, purpose: 'password_reset' }, JWT_SECRET, { expiresIn: '1h' });
+    const expiresAt = new Date(Date.now() + 3600000); // 1 hour from now
+    await db.query('INSERT INTO password_reset_tokens (user_id, token, expires_at, used) VALUES (?, ?, ?, ?)', [
+      user.id,
+      resetToken,
+      expiresAt,
+      false
+    ]);
+
+    const resetLink = `https://www.mysandshome.com/reset-password.html?token=${resetToken}`;
+    const emailContent = `Click <a href="${resetLink}">here</a> to reset your password. This link will expire in 1 hour.`;
+    const command = `echo "${emailContent}" | s-nail -s "S&S Family App - Password Reset" -r "testing.email111011@gmail.com" -M "text/html" ${email}`;
+
+    try {
+      await execPromise(command);
+      console.log('Password reset email sent via s-nail:', { email, resetLink });
+      sendResponse(res, 200, true, { message: 'Password reset link sent to your email' });
+    } catch (error) {
+      console.error('s-nail error:', error);
+      return sendResponse(res, 500, false, null, 'Failed to send email');
+    }
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    sendResponse(res, 500, false, null, 'Server error');
+  }
+});
+
+// Reset Password Route
+app.post('/reset-password', async (req: Request, res: Response) => {
+  const { token, newPassword } = req.body;
+  console.log('Reset password attempt:', { tokenLength: token?.length, newPasswordLength: newPassword?.length });
+
+  if (!token || !newPassword) {
+    return sendResponse(res, 400, false, null, 'Token and new password are required');
+  }
+  if (newPassword.length < 6) {
+    return sendResponse(res, 400, false, null, 'New password must be at least 6 characters');
+  }
+
+  try {
+    const db = await initDb();
+    const [rows] = await db.query('SELECT user_id, expires_at, used FROM password_reset_tokens WHERE token = ?', [token]);
+    const tokenRecord = (rows as any[])[0];
+    if (!tokenRecord) {
+      console.log('Token not found:', token);
+      return sendResponse(res, 400, false, null, 'Invalid token');
+    }
+
+    if (tokenRecord.used) {
+      console.log('Token already used:', token);
+      return sendResponse(res, 400, false, null, 'Token is used or expired');
+    }
+
+    if (new Date() > new Date(tokenRecord.expires_at)) {
+      console.log('Token expired:', { token, expires_at: tokenRecord.expires_at });
+      return sendResponse(res, 400, false, null, 'Token is used or expired');
+    }
+
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; purpose: string };
+      if (decoded.purpose !== 'password_reset' || decoded.userId !== tokenRecord.user_id) {
+        console.log('Invalid token payload:', decoded);
+        return sendResponse(res, 400, false, null, 'Invalid token');
+      }
+    } catch (error) {
+      console.error('Token verification error:', error);
+      return sendResponse(res, 400, false, null, 'Invalid token');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await db.query('UPDATE user SET password = ? WHERE id = ?', [hashedPassword, tokenRecord.user_id]);
+    await db.query('UPDATE password_reset_tokens SET used = ? WHERE token = ?', [true, token]);
+
+    console.log('Password reset successful:', { user_id: tokenRecord.user_id });
+    sendResponse(res, 200, true, { message: 'Password reset successful' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    sendResponse(res, 500, false, null, 'Server error');
+  }
+});
 
 // Socket.IO Authentication and Events
 io.use(async (socket, next) => {

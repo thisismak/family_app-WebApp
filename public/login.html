@@ -47,7 +47,8 @@
                 <ion-spinner name="crescent" hidden></ion-spinner>
               </ion-button>
               <p class="ion-text-center">
-                Don't have an account? <a href="/register.html">Register</a>
+                Don't have an account? <a href="/register.html">Register</a> | 
+                <a href="/forgot-password.html">Forgot Password?</a>
               </p>
             </form>
           </ion-card-content>
@@ -77,7 +78,7 @@
         // 初始化錯誤訊息和按鈕狀態
         usernameError.hidden = true;
         passwordError.hidden = true;
-        loginButton.disabled = false; // 初始啟用按鈕
+        loginButton.disabled = false;
         console.log("Initial state:", { usernameError: usernameError.hidden, passwordError: passwordError.hidden, loginButtonDisabled: loginButton.disabled });
 
         // Toast 顯示輔助函數
@@ -94,21 +95,21 @@
             console.log(`Toast dismissed: ${message}`);
           } catch (error) {
             console.error("Toast error:", error);
-            alert(message); // 後備方案
+            alert(message);
           }
         }
 
         // 輸入驗證
         usernameInput?.addEventListener("ionInput", (e) => {
           const value = e.target.value?.trim() || "";
-          usernameError.hidden = value.length > 0; // 僅檢查是否為空
+          usernameError.hidden = value.length > 0;
           console.log("Username input:", { value, length: value.length, valid: usernameError.hidden });
           updateButtonState();
         });
 
         passwordInput?.addEventListener("ionInput", (e) => {
           const value = e.target.value?.trim() || "";
-          passwordError.hidden = value.length > 0; // 僅檢查是否為空
+          passwordError.hidden = value.length > 0;
           console.log("Password input:", { value, length: value.length, valid: passwordError.hidden });
           updateButtonState();
         });
@@ -209,13 +210,13 @@
       });
     </script>
     <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/serviceworker.js')
-        .then(reg => console.log('Service Worker registered'))
-        .catch(err => console.error('Service Worker registration failed:', err));
-    });
-  }
-</script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/serviceworker.js')
+            .then(reg => console.log('Service Worker registered'))
+            .catch(err => console.error('Service Worker registration failed:', err));
+        });
+      }
+    </script>
   </body>
 </html>

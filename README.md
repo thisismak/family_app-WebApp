@@ -204,5 +204,29 @@ sudo certbot renew --dry-run
 h. 可以手動添加 Cron 任務
 sudo crontab -e
 0 0,12 * * * certbot renew --quiet
+
+## Gmail SMTP設置
+a. 安裝EPEL
+sudo dnf install -y epel-release
+b. 安裝s-nail
+sudo dnf install -y s-nail
+c. 檢查版本
+s-nail --version
+d. 升級權限
+sudo touch /etc/s-nail.rc
+sudo chmod 644 /etc/s-nail.rc
+sudo chown root:root /etc/s-nail.rc
+e. 添加Gmail SMTP功能
+sudo vi /etc/s-nail.rc
+set sendcharsets=utf-8
+set from=testing.email111011@gmail.com
+set mta=smtp://testing.email111011%40gmail.com:lgzrupgilrymwjpu@smtp.gmail.com:587
+set smtp-use-starttls
+set tls-verify=ignore
+set smtp-auth=login
+set v15-compat
+f. 可發電郵測試功能
+echo "<p>這是一封測試郵件</p>" | s-nail -s "測試郵件" -r "testing.email111011@gmail.com" -M "text/html" thismywing@hotmail.com
+
 ## 打開網站
 例如 https://www.mysandshome.com/
