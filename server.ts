@@ -14,6 +14,16 @@ import { promisify } from 'util';
 
 dotenv.config();
 
+// MySQL DATETIME 格式化函數
+function toMysqlDatetime(date: Date = new Date()): string {
+  return date.getFullYear() + '-' +
+    String(date.getMonth() + 1).padStart(2, '0') + '-' +
+    String(date.getDate()).padStart(2, '0') + ' ' +
+    String(date.getHours()).padStart(2, '0') + ':' +
+    String(date.getMinutes()).padStart(2, '0') + ':' +
+    String(date.getSeconds()).padStart(2, '0');
+}
+
 const app: Application = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -200,7 +210,7 @@ app.post('/forgot-password', async (req: Request, res: Response) => {
     }
 
     const resetToken = jwt.sign({ userId: user.id, purpose: 'password_reset' }, JWT_SECRET, { expiresIn: '1h' });
-    const expiresAt = new Date(Date.now() + 3600000); // 1 hour from now
+    const expiresAt = toMysqlDatetime(new Date(Date.now() + 3600000)); // 1 hour from now
     await db.query('INSERT INTO password_reset_tokens (user_id, token, expires_at, used) VALUES (?, ?, ?, ?)', [
       user.id,
       resetToken,
@@ -324,7 +334,7 @@ io.on('connection', async (socket) => {
 
     socket.on('message', async (message) => {
       try {
-        const sent_at = new Date().toISOString();
+        const sent_at = toMysqlDatetime();
         const [result] = await db.query<mysql.ResultSetHeader>(
           'INSERT INTO message (family_id, sender_id, content, sent_at) VALUES (?, ?, ?, ?)',
           [family.family_id, user.userId, message.content, sent_at]
@@ -659,7 +669,7 @@ app.get('/calendar', authenticate, async (req: AuthRequest, res: Response) => {
 
 app.post('/calendar', authenticate, async (req: AuthRequest, res: Response) => {
   const user_id = req.user!.userId;
-  const { title, start_datetime, end_datetime, reminder_datetime } = req.body;
+  let { title, start_datetime, end_datetime, reminder_datetime } = req.body;
 
   if (!title || !start_datetime) {
     return sendResponse(res, 400, false, null, 'Title and start date are required');
@@ -667,6 +677,18 @@ app.post('/calendar', authenticate, async (req: AuthRequest, res: Response) => {
   if (title.length > 100) {
     return sendResponse(res, 400, false, null, 'Title must be 100 characters or less');
   }
+
+  // 修正：將 ISO 格式字串轉為 MySQL DATETIME 格式
+  function fixDatetime(dt: string | undefined): string | null {
+    if (!dt) return null;
+    // 直接用 new Date 轉換
+    const d = new Date(dt);
+    if (isNaN(d.getTime())) return null;
+    return toMysqlDatetime(d);
+  }
+  start_datetime = fixDatetime(start_datetime);
+  end_datetime = fixDatetime(end_datetime);
+  reminder_datetime = fixDatetime(reminder_datetime);
 
   try {
     const db = await initDb();
@@ -677,10 +699,10 @@ app.post('/calendar', authenticate, async (req: AuthRequest, res: Response) => {
       return sendResponse(res, 403, false, null, 'User not in a family');
     }
 
-    const created_at = new Date().toISOString();
+    const created_at = toMysqlDatetime();
     const [result] = await db.query(
       'INSERT INTO event (family_id, creator_id, title, start_datetime, end_datetime, reminder_datetime, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [family.family_id, user_id, title, start_datetime, end_datetime || null, reminder_datetime || null, created_at]
+      [family.family_id, user_id, title, start_datetime, end_datetime, reminder_datetime, created_at]
     );
     console.log('Event created:', { event_id: (result as any).insertId, family_id: family.family_id });
     sendResponse(res, 201, true, { message: 'Event created', event_id: (result as any).insertId });
@@ -764,7 +786,7 @@ app.post('/tasks', authenticate, async (req: AuthRequest, res: Response) => {
         }
       }
 
-      const created_at = new Date().toISOString();
+      const created_at = toMysqlDatetime();
       const [result] = await db.query(
         'INSERT INTO task (family_id, creator_id, assignee_id, title, description, due_date, priority, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [family.family_id, user_id, assignee_id || null, title, description || null, due_date || null, priority || 'medium', 'pending', created_at]
@@ -913,7 +935,7 @@ app.post('/messages', authenticate, async (req: AuthRequest, res: Response) => {
       return sendResponse(res, 403, false, null, 'User not in a family');
     }
 
-    const sent_at = new Date().toISOString();
+    const sent_at = toMysqlDatetime();
     const [result] = await db.query(
       'INSERT INTO message (family_id, sender_id, content, sent_at) VALUES (?, ?, ?, ?)',
       [family.family_id, user_id, content, sent_at]

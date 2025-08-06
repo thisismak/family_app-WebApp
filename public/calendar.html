@@ -131,9 +131,9 @@
           e.preventDefault();
           const eventData = {
             title,
-            start_datetime: startDateTime ? startDateTime.format('YYYY-MM-DD HH') + ':00:00.000Z' : null,
-            end_datetime: endDateTime ? endDateTime.format('YYYY-MM-DD HH') + ':00:00.000Z' : null,
-            reminder_datetime: reminderDateTime ? reminderDateTime.format('YYYY-MM-DD HH') + ':00:00.000Z' : null,
+            start_datetime: startDateTime ? startDateTime.format('YYYY-MM-DD HH:mm:ss') : null,
+            end_datetime: endDateTime ? endDateTime.format('YYYY-MM-DD HH:mm:ss') : null,
+            reminder_datetime: reminderDateTime ? reminderDateTime.format('YYYY-MM-DD HH:mm:ss') : null,
           };
           console.log("Creating event:", eventData);
           await onSubmit(eventData);

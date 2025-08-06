@@ -248,3 +248,20 @@ echo "<p>這是一封測試郵件</p>" | s-nail -s "測試郵件" -r "testing.em
 
 ## 打開網站
 例如 https://www.mysandshome.com/
+
+# 故障處理
+## 重啟網站服務方法
+cd /var/www/family-app && npx tsc
+pm2 restart family-app
+systemctl restart nginx
+
+## 常用日誌
+tail -n 50 /var/log/nginx/family-app-access.log
+tail -n 50 /var/log/nginx/family-app-error.log
+pm2 log family-app
+
+## 檢查SQL內容
+mysql -u app_user -psam1_sql_password -e "SHOW DATABASES;"
+mysql -u app_user -psam1_sql_password -e "SHOW TABLES FROM family_app;"
+mysql -u app_user -psam1_sql_password -e "USE family_app; DESC event;"
+mysql -u app_user -psam1_sql_password -e "USE family_app; SELECT * FROM event;"
