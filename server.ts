@@ -827,6 +827,105 @@ app.post('/calendar', authenticate, async (req: AuthRequest, res: Response) => {
   }
 });
 
+app.patch('/calendar/:id', authenticate, async (req: AuthRequest, res: Response) => {
+  const user_id = req.user!.userId;
+  const event_id = parseInt(req.params.id);
+  let { title, start_datetime, end_datetime, reminder_datetime } = req.body;
+
+  if (title && title.length > 100) {
+    return sendResponse(res, 400, false, null, 'Title must be 100 characters or less');
+  }
+
+  // 修正：將 ISO 格式字串轉為 MySQL DATETIME 格式
+  function fixDatetime(dt: string | undefined): string | null {
+    if (!dt) return null;
+    const d = new Date(dt);
+    if (isNaN(d.getTime())) return null;
+    return toMysqlDatetime(d);
+  }
+  start_datetime = fixDatetime(start_datetime);
+  end_datetime = fixDatetime(end_datetime);
+  reminder_datetime = fixDatetime(reminder_datetime);
+
+  try {
+    const db = await initDb();
+    const [rows] = await db.query('SELECT family_id FROM family_member WHERE user_id = ?', [user_id]);
+    const family = (rows as any[])[0];
+    if (!family) {
+      console.log('User not in a family:', user_id);
+      return sendResponse(res, 403, false, null, 'User not in a family');
+    }
+
+    const [event] = await db.query('SELECT id, creator_id FROM event WHERE id = ? AND family_id = ?', [event_id, family.family_id]);
+    if ((event as any[]).length === 0) {
+      return sendResponse(res, 404, false, null, 'Event not found');
+    }
+
+    // Restrict updates to event creator or family admin
+    const eventData = (event as any[])[0];
+    const [isAdmin] = await db.query('SELECT role FROM family_member WHERE user_id = ? AND family_id = ?', [user_id, family.family_id]);
+    const isAdminRole = (isAdmin as any[])[0]?.role === 'admin';
+    if (eventData.creator_id !== user_id && !isAdminRole) {
+      return sendResponse(res, 403, false, null, 'Only the event creator or family admin can update this event');
+    }
+
+    const updates: { [key: string]: any } = {};
+    if (title) updates.title = title;
+    if (start_datetime !== undefined) updates.start_datetime = start_datetime;
+    if (end_datetime !== undefined) updates.end_datetime = end_datetime;
+    if (reminder_datetime !== undefined) updates.reminder_datetime = reminder_datetime;
+    if (reminder_datetime !== undefined) updates.notified = false; // Reset notified flag if reminder changes
+
+    if (Object.keys(updates).length === 0) {
+      return sendResponse(res, 400, false, null, 'No fields to update');
+    }
+
+    const setClause = Object.keys(updates).map((key) => `${key} = ?`).join(', ');
+    const values = [...Object.values(updates), event_id];
+    await db.query(`UPDATE event SET ${setClause} WHERE id = ?`, values);
+    console.log('Event updated:', { event_id, updates });
+    sendResponse(res, 200, true, { message: 'Event updated' });
+  } catch (error) {
+    console.error('Update event error:', error);
+    sendResponse(res, 500, false, null, 'Server error');
+  }
+});
+
+app.delete('/calendar/:id', authenticate, async (req: AuthRequest, res: Response) => {
+  const user_id = req.user!.userId;
+  const event_id = parseInt(req.params.id);
+
+  try {
+    const db = await initDb();
+    const [rows] = await db.query('SELECT family_id FROM family_member WHERE user_id = ?', [user_id]);
+    const family = (rows as any[])[0];
+    if (!family) {
+      console.log('User not in a family:', user_id);
+      return sendResponse(res, 403, false, null, 'User not in a family');
+    }
+
+    const [event] = await db.query('SELECT id, creator_id FROM event WHERE id = ? AND family_id = ?', [event_id, family.family_id]);
+    if ((event as any[]).length === 0) {
+      return sendResponse(res, 404, false, null, 'Event not found');
+    }
+
+    // Restrict deletion to event creator or family admin
+    const eventData = (event as any[])[0];
+    const [isAdmin] = await db.query('SELECT role FROM family_member WHERE user_id = ? AND family_id = ?', [user_id, family.family_id]);
+    const isAdminRole = (isAdmin as any[])[0]?.role === 'admin';
+    if (eventData.creator_id !== user_id && !isAdminRole) {
+      return sendResponse(res, 403, false, null, 'Only the event creator or family admin can delete this event');
+    }
+
+    await db.query('DELETE FROM event WHERE id = ?', [event_id]);
+    console.log('Event deleted:', { event_id });
+    sendResponse(res, 200, true, { message: 'Event deleted' });
+  } catch (error) {
+    console.error('Delete event error:', error);
+    sendResponse(res, 500, false, null, 'Server error');
+  }
+});
+
 app.get('/tasks', authenticate, async (req: AuthRequest, res: Response) => {
   const user_id = req.user!.userId;
   const query = (req.query.q as string)?.trim() || '';

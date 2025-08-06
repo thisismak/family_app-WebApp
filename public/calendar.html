@@ -134,7 +134,7 @@
     </ion-app>
 
     <script type="text/babel">
-      const { DatePicker, Button, Input } = window.antd;
+      const { DatePicker, Button, Input, Modal, Form } = window.antd;
       const { useState } = React;
 
       const CreateEventForm = ({ onSubmit, showToast }) => {
@@ -151,9 +151,7 @@
             end_datetime: endDateTime ? endDateTime.format('YYYY-MM-DD HH:mm:ss') : null,
             reminder_datetime: reminderDateTime ? reminderDateTime.format('YYYY-MM-DD HH:mm:ss') : null,
           };
-          console.log("Creating event:", eventData);
           await onSubmit(eventData);
-          // Reset form
           setTitle('');
           setStartDateTime(null);
           setEndDateTime(null);
@@ -230,8 +228,87 @@
         );
       };
 
+      const EditEventForm = ({ visible, onCancel, onSubmit, initialValues, showToast }) => {
+        const [form] = Form.useForm();
+        const [submitting, setSubmitting] = useState(false);
+
+        const handleSubmit = async (values) => {
+          setSubmitting(true);
+          const eventData = {
+            title: values.title,
+            start_datetime: values.start_datetime ? values.start_datetime.format('YYYY-MM-DD HH:mm:ss') : null,
+            end_datetime: values.end_datetime ? values.end_datetime.format('YYYY-MM-DD HH:mm:ss') : null,
+            reminder_datetime: values.reminder_datetime ? values.reminder_datetime.format('YYYY-MM-DD HH:mm:ss') : null,
+          };
+          await onSubmit(eventData);
+          setSubmitting(false);
+        };
+
+        return (
+          <Modal
+            title="Edit Event"
+            visible={visible}
+            onCancel={onCancel}
+            footer={null}
+          >
+            <Form
+              form={form}
+              initialValues={{
+                title: initialValues.title,
+                start_datetime: initialValues.start_datetime ? window.dayjs(initialValues.start_datetime) : null,
+                end_datetime: initialValues.end_datetime ? window.dayjs(initialValues.end_datetime) : null,
+                reminder_datetime: initialValues.reminder_datetime ? window.dayjs(initialValues.reminder_datetime) : null,
+              }}
+              onFinish={handleSubmit}
+            >
+              <Form.Item
+                name="title"
+                rules={[{ required: true, message: 'Please enter event title' }]}
+              >
+                <Input placeholder="Enter event title" />
+              </Form.Item>
+              <Form.Item
+                name="start_datetime"
+                rules={[{ required: true, message: 'Please select start time' }]}
+              >
+                <DatePicker
+                  showTime={{ format: 'HH' }}
+                  format="YYYY-MM-DD HH"
+                  placeholder="Select start time"
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+              <Form.Item name="end_datetime">
+                <DatePicker
+                  showTime={{ format: 'HH' }}
+                  format="YYYY-MM-DD HH"
+                  placeholder="Select end time"
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+              <Form.Item name="reminder_datetime">
+                <DatePicker
+                  showTime={{ format: 'HH' }}
+                  format="YYYY-MM-DD HH"
+                  placeholder="Select reminder time"
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+              <Form.Item>
+                <Button type="primary" htmlType="submit" loading={submitting} block>
+                  Update Event
+                </Button>
+              </Form.Item>
+            </Form>
+          </Modal>
+        );
+      };
+
       const App = () => {
-        const handleSubmit = async (eventData) => {
+        const [editModalVisible, setEditModalVisible] = useState(false);
+        const [editingEvent, setEditingEvent] = useState(null);
+
+        const handleCreate = async (eventData) => {
           const token = localStorage.getItem("token") || sessionStorage.getItem("token") || "";
           try {
             const response = await fetch("/calendar", {
@@ -243,22 +320,85 @@
               body: JSON.stringify(eventData),
             });
             const data = await response.json();
-            console.log("Create event response:", data);
             if (!response.ok) {
               throw new Error(data.error || "Failed to create event");
             }
             await window.showToast(`Event created (ID: ${data.data.event_id})`, 2000, "success");
             await window.fetchEvents();
           } catch (error) {
-            console.error("Create event error:", error);
             await window.showToast(`Failed to create event: ${error.message}`, 2000, "danger");
           }
         };
 
-        return <CreateEventForm onSubmit={handleSubmit} showToast={window.showToast} />;
+        const handleEdit = async (eventData) => {
+          const token = localStorage.getItem("token") || sessionStorage.getItem("token") || "";
+          try {
+            const response = await fetch(`/calendar/${editingEvent.id}`, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(eventData),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+              throw new Error(data.error || "Failed to update event");
+            }
+            await window.showToast("Event updated successfully", 2000, "success");
+            setEditModalVisible(false);
+            setEditingEvent(null);
+            await window.fetchEvents();
+          } catch (error) {
+            await window.showToast(`Failed to update event: ${error.message}`, 2000, "danger");
+          }
+        };
+
+        const handleDelete = async (eventId) => {
+          const token = localStorage.getItem("token") || sessionStorage.getItem("token") || "";
+          try {
+            const response = await fetch(`/calendar/${eventId}`, {
+              method: "DELETE",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
+            const data = await response.json();
+            if (!response.ok) {
+              throw new Error(data.error || "Failed to delete event");
+            }
+            await window.showToast("Event deleted successfully", 2000, "success");
+            await window.fetchEvents();
+          } catch (error) {
+            await window.showToast(`Failed to delete event: ${error.message}`, 2000, "danger");
+          }
+        };
+
+        window.handleEdit = openEditModal;
+        window.handleDelete = handleDelete;
+
+        const openEditModal = (event) => {
+          setEditingEvent(event);
+          setEditModalVisible(true);
+        };
+
+        return (
+          <>
+            <CreateEventForm onSubmit={handleCreate} showToast={window.showToast} />
+            <EditEventForm
+              visible={editModalVisible}
+              onCancel={() => {
+                setEditModalVisible(false);
+                setEditingEvent(null);
+              }}
+              onSubmit={handleEdit}
+              initialValues={editingEvent || {}}
+              showToast={window.showToast}
+            />
+          </>
+        );
       };
 
-      // Render the React component
       ReactDOM.render(<App />, document.getElementById("create-event-root"));
     </script>
 
@@ -315,6 +455,14 @@
                   <p>Start: ${new Date(event.start_datetime).toLocaleString()}</p>
                   ${event.end_datetime ? `<p>End: ${new Date(event.end_datetime).toLocaleString()}</p>` : ""}
                   ${event.reminder_datetime ? `<p>Reminder: ${new Date(event.reminder_datetime).toLocaleString()}</p>` : ""}
+                  <div style="margin-top:12px;display:flex;gap:8px;">
+                    <ion-button fill="outline" color="primary" onclick='window.handleEdit(${JSON.stringify(event)})'>
+                      <ion-icon name="pencil-outline"></ion-icon> Edit
+                    </ion-button>
+                    <ion-button fill="outline" color="danger" onclick='window.handleDelete(${event.id})'>
+                      <ion-icon name="trash-outline"></ion-icon> Delete
+                    </ion-button>
+                  </div>
                 </ion-label>
               `;
               eventList.appendChild(item);
@@ -342,7 +490,6 @@
       // Function to subscribe to push notifications
       async function subscribeToPush() {
         try {
-          // Request notification permission
           const permission = await Notification.requestPermission();
           if (permission !== 'granted') {
             console.log('Notification permission denied');
@@ -350,14 +497,12 @@
             return;
           }
 
-          // Register Service Worker and subscribe
           const registration = await navigator.serviceWorker.ready;
           const subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: 'BHQWOcRLHJmk2jhSeme_RxeBdhv9Rx4qPQ8ZMlSinSBUMOWQgP_pJnJBPnVZjFE05XOmmXg5mgaKQSQ_B6lj8e8'
           });
 
-          // Send subscription to server
           const token = localStorage.getItem("token") || sessionStorage.getItem("token") || "";
           const response = await fetch('/subscribe', {
             method: 'POST',
@@ -439,7 +584,6 @@
           }
         }
 
-        // Check family status
         const hasFamily = await checkFamilyStatus();
         if (!hasFamily) {
           await window.showToast("You have not joined any family. Please create or join a family first.", 3000, "warning");
@@ -447,10 +591,8 @@
           return;
         }
 
-        // Load event list
         await window.fetchEvents();
 
-        // Subscribe to push notifications
         if ('serviceWorker' in navigator && 'PushManager' in window) {
           await subscribeToPush();
         } else {
