@@ -308,6 +308,16 @@
         const [editModalVisible, setEditModalVisible] = useState(false);
         const [editingEvent, setEditingEvent] = useState(null);
 
+        React.useEffect(() => {
+          window.addEventListener("openEditModal", (e) => {
+            setEditingEvent(e.detail);
+            setEditModalVisible(true);
+          });
+          return () => {
+            window.removeEventListener("openEditModal", () => {});
+          };
+        }, []);
+
         const handleCreate = async (eventData) => {
           const token = localStorage.getItem("token") || sessionStorage.getItem("token") || "";
           try {
@@ -374,7 +384,17 @@
           }
         };
 
-        window.handleEdit = openEditModal;
+        // 重新赋值，确保 window.handleEdit 是函数
+        window.handleEdit = function(event) {
+          // 通过 React 的 root 组件暴露一个方法
+          // 这里直接触发 React 的 setState
+          const root = document.getElementById("create-event-root");
+          if (root && root._reactRootContainer) {
+            // 触发 React 组件的 openEditModal
+            // 你可以用 window.dispatchEvent 或自定义事件通知 React
+            window.dispatchEvent(new CustomEvent("openEditModal", { detail: event }));
+          }
+        };
         window.handleDelete = handleDelete;
 
         const openEditModal = (event) => {
@@ -455,16 +475,21 @@
                   <p>Start: ${new Date(event.start_datetime).toLocaleString()}</p>
                   ${event.end_datetime ? `<p>End: ${new Date(event.end_datetime).toLocaleString()}</p>` : ""}
                   ${event.reminder_datetime ? `<p>Reminder: ${new Date(event.reminder_datetime).toLocaleString()}</p>` : ""}
-                  <div style="margin-top:12px;display:flex;gap:8px;">
-                    <ion-button fill="outline" color="primary" onclick='window.handleEdit(${JSON.stringify(event)})'>
+                  <div style="margin-top:12px;display:flex;gap:8px;flex-direction:row;">
+                    <button class="edit-btn ion-activatable ion-color ion-color-primary" style="border:none;padding:8px 16px;border-radius:6px;background:#3880ff;color:#fff;display:flex;align-items:center;gap:4px;">
                       <ion-icon name="pencil-outline"></ion-icon> Edit
-                    </ion-button>
-                    <ion-button fill="outline" color="danger" onclick='window.handleDelete(${event.id})'>
+                    </button>
+                    <button class="delete-btn ion-activatable ion-color ion-color-danger" style="border:none;padding:8px 16px;border-radius:6px;background:#eb445a;color:#fff;display:flex;align-items:center;gap:4px;">
                       <ion-icon name="trash-outline"></ion-icon> Delete
-                    </ion-button>
+                    </button>
                   </div>
                 </ion-label>
               `;
+              item.querySelector(".edit-btn").addEventListener("click", () => {
+                console.log("edit clicked", event);
+                window.handleEdit(event);
+              });
+              item.querySelector(".delete-btn").addEventListener("click", () => window.handleDelete(event.id));
               eventList.appendChild(item);
             }
           }
