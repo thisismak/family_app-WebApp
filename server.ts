@@ -72,32 +72,38 @@ async function initDb(): Promise<mysql.Pool> {
     db = await mysql.createPool({
       host: process.env.DB_HOST || 'localhost',
       user: process.env.DB_USER || 'app_user',
-      password: process.env.DB_PASSWORD || 'your_secure_password',
+      password: process.env.DB_PASSWORD || 'sam1_sql_password',
       database: process.env.DB_NAME || 'family_app',
+      port: Number(process.env.DB_PORT) || 3306,
+      charset: 'utf8mb4', // 明確指定 utf8mb4 字符集
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0
     });
-    console.log('MySQL connected');
+    console.log('MySQL connected with charset: utf8mb4');
 
-    // Create tables
+    // 確保資料庫使用 utf8mb4
+    await db.query('ALTER DATABASE family_app CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;');
+    console.log('Database character set set to utf8mb4');
+
+    // 創建表，明確指定 utf8mb4
     await db.query(`
       CREATE TABLE IF NOT EXISTS user (
         id INTEGER PRIMARY KEY AUTO_INCREMENT,
-        username VARCHAR(32) UNIQUE NOT NULL,
+        username VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
-        avatar TEXT,
-        email VARCHAR(255) UNIQUE
-      )
+        avatar TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+        email VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci UNIQUE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
     await db.query(`
       CREATE TABLE IF NOT EXISTS family (
         id INTEGER PRIMARY KEY AUTO_INCREMENT,
-        name VARCHAR(100) NOT NULL,
+        name VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
         owner_id INTEGER NOT NULL,
         FOREIGN KEY (owner_id) REFERENCES user(id) ON DELETE CASCADE
-      )
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
     await db.query(`
@@ -105,10 +111,10 @@ async function initDb(): Promise<mysql.Pool> {
         id INTEGER PRIMARY KEY AUTO_INCREMENT,
         family_id INTEGER NOT NULL,
         user_id INTEGER NOT NULL,
-        role VARCHAR(20) NOT NULL DEFAULT 'member',
+        role VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'member',
         FOREIGN KEY (family_id) REFERENCES family(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
-      )
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
     await db.query(`
@@ -116,7 +122,7 @@ async function initDb(): Promise<mysql.Pool> {
         id INTEGER PRIMARY KEY AUTO_INCREMENT,
         family_id INTEGER NOT NULL,
         creator_id INTEGER NOT NULL,
-        title VARCHAR(100) NOT NULL,
+        title VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
         start_datetime DATETIME NOT NULL,
         end_datetime DATETIME,
         reminder_datetime DATETIME,
@@ -124,12 +130,12 @@ async function initDb(): Promise<mysql.Pool> {
         created_at DATETIME NOT NULL,
         FOREIGN KEY (family_id) REFERENCES family(id) ON DELETE CASCADE,
         FOREIGN KEY (creator_id) REFERENCES user(id) ON DELETE CASCADE
-      )
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // Migration: Add 'notified' column if it doesn't exist
-    const [columns] = await db.query('SHOW COLUMNS FROM event LIKE "notified"');
-    if ((columns as any[]).length === 0) {
+    // 遷移：添加 notified 欄位（如果不存在）
+    const [eventColumns] = await db.query('SHOW COLUMNS FROM event LIKE "notified"');
+    if ((eventColumns as any[]).length === 0) {
       await db.query('ALTER TABLE event ADD COLUMN notified BOOLEAN DEFAULT FALSE');
       console.log('Added notified column to event table');
     }
@@ -143,7 +149,7 @@ async function initDb(): Promise<mysql.Pool> {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (family_id) REFERENCES family(id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
-      )
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
     await db.query(`
@@ -152,8 +158,8 @@ async function initDb(): Promise<mysql.Pool> {
         family_id INTEGER NOT NULL,
         creator_id INTEGER NOT NULL,
         assignee_id INTEGER,
-        title VARCHAR(100) NOT NULL,
-        description TEXT,
+        title VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+        description TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
         due_date DATE,
         priority ENUM('low', 'medium', 'high') NOT NULL DEFAULT 'medium',
         status ENUM('pending', 'completed') NOT NULL DEFAULT 'pending',
@@ -161,7 +167,7 @@ async function initDb(): Promise<mysql.Pool> {
         FOREIGN KEY (family_id) REFERENCES family(id) ON DELETE CASCADE,
         FOREIGN KEY (creator_id) REFERENCES user(id) ON DELETE CASCADE,
         FOREIGN KEY (assignee_id) REFERENCES user(id) ON DELETE SET NULL
-      )
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
     await db.query(`
@@ -169,25 +175,68 @@ async function initDb(): Promise<mysql.Pool> {
         id INTEGER PRIMARY KEY AUTO_INCREMENT,
         family_id INTEGER NOT NULL,
         sender_id INTEGER NOT NULL,
-        content VARCHAR(1000) NOT NULL,
+        content VARCHAR(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
         sent_at DATETIME NOT NULL,
         FOREIGN KEY (family_id) REFERENCES family(id) ON DELETE CASCADE,
         FOREIGN KEY (sender_id) REFERENCES user(id) ON DELETE CASCADE
-      )
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
     await db.query(`
       CREATE TABLE IF NOT EXISTS password_reset_tokens (
         id INTEGER PRIMARY KEY AUTO_INCREMENT,
         user_id INTEGER NOT NULL,
-        token VARCHAR(512) NOT NULL,
+        token VARCHAR(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
         expires_at DATETIME NOT NULL,
         used BOOLEAN NOT NULL DEFAULT FALSE,
         FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
-      )
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    console.log('All tables created successfully');
+    // 遷移現有表到 utf8mb4
+    const tables = ['user', 'family', 'family_member', 'event', 'push_subscriptions', 'task', 'message', 'password_reset_tokens'];
+    for (const table of tables) {
+      const [tableStatus] = await db.query(`SHOW TABLE STATUS WHERE Name = ?`, [table]);
+      if ((tableStatus as any[])[0].Collation !== 'utf8mb4_unicode_ci') {
+        await db.query(`ALTER TABLE ${table} CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+        console.log(`Converted table ${table} to utf8mb4_unicode_ci`);
+      }
+    }
+
+    // 檢查並修正特定欄位的字符集
+    await db.query(`
+      ALTER TABLE user 
+      MODIFY COLUMN username VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+      MODIFY COLUMN avatar TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+      MODIFY COLUMN email VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    `);
+    await db.query(`
+      ALTER TABLE family 
+      MODIFY COLUMN name VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL;
+    `);
+    await db.query(`
+      ALTER TABLE family_member 
+      MODIFY COLUMN role VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'member';
+    `);
+    await db.query(`
+      ALTER TABLE event 
+      MODIFY COLUMN title VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL;
+    `);
+    await db.query(`
+      ALTER TABLE task 
+      MODIFY COLUMN title VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+      MODIFY COLUMN description TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    `);
+    await db.query(`
+      ALTER TABLE message 
+      MODIFY COLUMN content VARCHAR(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL;
+    `);
+    await db.query(`
+      ALTER TABLE password_reset_tokens 
+      MODIFY COLUMN token VARCHAR(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL;
+    `);
+
+    console.log('All tables created and migrated to utf8mb4 successfully');
     return db;
   } catch (error) {
     console.error('MySQL initialization error:', error);
@@ -975,8 +1024,8 @@ app.post('/tasks', authenticate, async (req: AuthRequest, res: Response) => {
   const user_id = req.user!.userId;
   const { title, description, assignee_id, due_date, priority } = req.body;
 
-  if (!title || title.length > 100) {
-    return sendResponse(res, 400, false, null, 'Title is required and must be 100 characters or less');
+  if (!title || typeof title !== 'string' || title.length > 100) {
+    return sendResponse(res, 400, false, null, 'Title is required and must be a string (max 100 characters)');
   }
   if (priority && !['low', 'medium', 'high'].includes(priority)) {
     return sendResponse(res, 400, false, null, 'Priority must be low, medium, or high');
@@ -1001,12 +1050,13 @@ app.post('/tasks', authenticate, async (req: AuthRequest, res: Response) => {
       }
 
       const created_at = toMysqlDatetime();
+      console.log('Inserting task:', { family_id: family.family_id, creator_id: user_id, assignee_id, title, description, due_date, priority, created_at });
       const [result] = await db.query(
         'INSERT INTO task (family_id, creator_id, assignee_id, title, description, due_date, priority, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [family.family_id, user_id, assignee_id || null, title, description || null, due_date || null, priority || 'medium', 'pending', created_at]
       );
       await db.query('COMMIT');
-      console.log('Task created:', { task_id: (result as any).insertId, family_id: family.family_id });
+      console.log('Task created:', { task_id: (result as any).insertId, family_id: family.family_id, title });
       sendResponse(res, 201, true, { message: 'Task created', task_id: (result as any).insertId });
     } catch (error) {
       await db.query('ROLLBACK');
@@ -1027,8 +1077,8 @@ app.patch('/tasks/:id', authenticate, async (req: AuthRequest, res: Response) =>
   const task_id = parseInt(req.params.id);
   const { title, description, assignee_id, due_date, priority, status } = req.body;
 
-  if (title && title.length > 100) {
-    return sendResponse(res, 400, false, null, 'Title must be 100 characters or less');
+  if (title && typeof title !== 'string' || title.length > 100) {
+    return sendResponse(res, 400, false, null, 'Title must be a string (max 100 characters)');
   }
   if (priority && !['low', 'medium', 'high'].includes(priority)) {
     return sendResponse(res, 400, false, null, 'Priority must be low, medium, or high');
@@ -1072,6 +1122,7 @@ app.patch('/tasks/:id', authenticate, async (req: AuthRequest, res: Response) =>
 
     const setClause = Object.keys(updates).map((key) => `${key} = ?`).join(', ');
     const values = [...Object.values(updates), task_id];
+    console.log('Updating task:', { task_id, updates });
     await db.query(`UPDATE task SET ${setClause} WHERE id = ?`, values);
     console.log('Task updated:', { task_id, updates });
     sendResponse(res, 200, true, { message: 'Task updated' });
@@ -1136,8 +1187,8 @@ app.post('/messages', authenticate, async (req: AuthRequest, res: Response) => {
   const user_id = req.user!.userId;
   const { content } = req.body;
 
-  if (!content || content.length > 1000) {
-    return sendResponse(res, 400, false, null, 'Content is required and must be 1000 characters or less');
+  if (!content || typeof content !== 'string' || content.length > 1000) {
+    return sendResponse(res, 400, false, null, 'Content is required and must be a string (max 1000 characters)');
   }
 
   try {
@@ -1150,6 +1201,7 @@ app.post('/messages', authenticate, async (req: AuthRequest, res: Response) => {
     }
 
     const sent_at = toMysqlDatetime();
+    console.log('Inserting message:', { family_id: family.family_id, sender_id: user_id, content, sent_at });
     const [result] = await db.query(
       'INSERT INTO message (family_id, sender_id, content, sent_at) VALUES (?, ?, ?, ?)',
       [family.family_id, user_id, content, sent_at]

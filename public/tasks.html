@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>S&S Family App - Tasks</title>
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/dist/ionic/ionic.esm.js"></script>
-    <script nomodule src="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/dist/ionic/ionic.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/css/ionic.bundle.min.css" />
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core@7.8.4/dist/ionic/ionic.esm.js"></script>
+    <script nomodule src="https://cdn.jsdelivr.net/npm/@ionic/core@7.8.4/dist/ionic/ionic.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ionic/core@7.8.4/css/ionic.bundle.min.css" />
     <link rel="stylesheet" href="/styles.css" />
     <link rel="manifest" href="/manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
@@ -115,6 +115,7 @@
                           label="Assignee (Optional)"
                           label-placement="stacked"
                           placeholder="Select family member"
+                          interface="action-sheet"
                         ></ion-select>
                       </ion-item>
                     </ion-col>
@@ -165,20 +166,46 @@
 
     <script>
       // Define API base URL, dynamically set based on environment
-      const API_BASE_URL = process.env.NODE_ENV === 'production' 
-        ? 'https://api.mysandshome.com' 
+      const API_BASE_URL = window.location.hostname === 'www.mysandshome.com'
+        ? 'https://www.mysandshome.com'
         : 'http://localhost:8100';
 
       document.addEventListener("DOMContentLoaded", async () => {
         console.log("DOM 已載入 tasks.html");
         console.log("Ionic 版本:", window.Ionic?.version || "未載入");
-        const token = localStorage.getItem("token") || sessionStorage.getItem("token") || "";
+        const token = sessionStorage.getItem("token") || localStorage.getItem("token") || "";
         if (!token) {
           console.log("未找到 token，正在跳轉到 /login.html");
+          await showToast("Please log in to view tasks", 2000, "warning");
           window.location.href = "/login.html";
           return;
         }
         console.log("找到 token:", token.substring(0, 20) + "...");
+
+        // Menu navigation
+        const navItems = {
+          "nav-calendar": "/calendar.html",
+          "nav-tasks": "/tasks.html",
+          "nav-chat": "/chat.html",
+          "nav-family": "/family.html",
+        };
+        Object.keys(navItems).forEach((id) => {
+          const item = document.getElementById(id);
+          item?.addEventListener("click", () => {
+            const url = navItems[id];
+            console.log(`正在跳轉到 ${url}`);
+            window.location.href = url;
+          });
+        });
+
+        // Sign out
+        document.getElementById("signOut")?.addEventListener("click", () => {
+          console.log("點擊登出");
+          localStorage.removeItem("token");
+          sessionStorage.removeItem("token");
+          console.log("已登出，清除 token");
+          window.location.href = "/login.html";
+        });
 
         // Toast display helper function
         async function showToast(message, duration, color) {
@@ -260,6 +287,7 @@
         async function fetchFamilyMembers() {
           try {
             console.log("正在獲取家庭成員，家庭 ID:", familyId);
+            console.log("使用 token:", token.substring(0, 20) + "...");
             const response = await fetch(`${API_BASE_URL}/family/members?family_id=${familyId}`, {
               method: "GET",
               headers: {
@@ -270,19 +298,36 @@
             const data = await response.json();
             console.log("獲取家庭成員回應:", JSON.stringify(data, null, 2));
             if (!response.ok) {
+              if (response.status === 401) {
+                console.log("401 Unauthorized: 無效 token 或未登錄");
+                await showToast("Authentication failed, please log in again", 3000, "danger");
+                localStorage.removeItem("token");
+                sessionStorage.removeItem("token");
+                window.location.href = "/login.html";
+                return;
+              }
               throw new Error(data.error || "Failed to fetch family members");
             }
             assigneeSelect.innerHTML = '<ion-select-option value="">None</ion-select-option>';
-            if (Array.isArray(data.data?.members)) {
+            if (Array.isArray(data.data?.members) && data.data.members.length > 0) {
+              console.log("家庭成員數量:", data.data.members.length);
               data.data.members.forEach((member) => {
                 const option = document.createElement("ion-select-option");
                 option.value = member.user_id;
                 option.textContent = member.username;
                 assigneeSelect.appendChild(option);
+                console.log(`已添加成員選項: ${member.username} (ID: ${member.user_id})`);
               });
+              console.log("最終 assigneeSelect HTML:", assigneeSelect.innerHTML);
+              assigneeSelect.dispatchEvent(new CustomEvent("ionChange")); // 觸發 Ionic 更新
+            } else {
+              console.warn("無家庭成員或數據格式不正確:", data);
+              assigneeSelect.innerHTML = '<ion-select-option value="">No family members available</ion-select-option>';
+              await showToast("No family members available to assign tasks", 3000, "warning");
             }
           } catch (error) {
             console.error("獲取家庭成員錯誤:", error);
+            assigneeSelect.innerHTML = '<ion-select-option value="">Error loading members</ion-select-option>';
             await showToast(`Failed to load family members: ${error.message}`, 2000, "danger");
           }
         }
@@ -465,7 +510,7 @@
         });
 
         await renderTasks();
-
+        
         taskForm?.addEventListener("submit", async (event) => {
           event.preventDefault();
           const form = event.target;
