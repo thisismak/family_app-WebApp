@@ -62,14 +62,15 @@ node dist/server.js
 curl http://localhost:8100
 ## 建立nginx的family網站配置文件
 sudo vi /etc/nginx/conf.d/family-app.conf
-    # HTTP 重定向：將 mysandshome.com 和 www.mysandshome.com 重定向到 https://www.mysandshome.com
+```
+# HTTP 重定向：將 mysandshome.com 和 www.mysandshome.com 重定向到 https://www.mysandshome.com
 server {
     listen 80;
     server_name mysandshome.com www.mysandshome.com;
     return 301 https://www.mysandshome.com$request_uri;
 }
 
-    # HTTPS 主服務器塊，僅處理 www.mysandshome.com
+# HTTPS 主服務器塊，僅處理 www.mysandshome.com
 server {
     listen 443 ssl;
     server_name www.mysandshome.com;
@@ -139,7 +140,7 @@ server {
     }
 }
 
-    # HTTPS 重定向：將 mysandshome.com 重定向到 www.mysandshome.com
+# HTTPS 重定向：將 mysandshome.com 重定向到 www.mysandshome.com
 server {
     listen 443 ssl;
     server_name mysandshome.com;
@@ -152,6 +153,7 @@ server {
 
     return 301 https://www.mysandshome.com$request_uri;
 }
+```
 ## 檢查nginx的配置是否正常
 sudo nginx -t
 ## 重啟nginx服務
