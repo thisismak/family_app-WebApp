@@ -44,6 +44,14 @@ git clone https://github.com/thisismak/family_app-WebApp .
 ## 進入網站目錄及透過package.json安裝需要的工具
 cd /var/www/family-app
 npm install
+## 建立VAPID給APP通知使用
+cd /var/www/family-app
+npm install web-push
+npx web-push generate-vapid-keys
+Public Key:
+BHQWOcRLHJmk2jhSeme_RxeBdhv9Rx4qPQ8ZMlSinSBUMOWQgP_pJnJBPnVZjFE05XOmmXg5mgaKQSQ_B6lj8e8
+Private Key:
+Mto2_dOgvBbsY7yxk-Sj6pjqTd9dyi3Rms7GTlfPQD0
 ## 建立環境及加入SQL內容(因安全性問題, 不建議上載到Github)
 vi .env
 DB_HOST=localhost
@@ -52,6 +60,9 @@ DB_PASSWORD=sam1_sql_password
 DB_NAME=family_app
 PORT=8100
 JWT_SECRET=bDiB6RXGKM96ODYWFfyXgl/9r1ar6/CgGLYfi17HKsBy94YduWwgmaIk/eIa31BF
+VAPID_PUBLIC_KEY=BHQWOcRLHJmk2jhSeme_RxeBdhv9Rx4qPQ8ZMlSinSBUMOWQgP_pJnJBPnVZjFE05XOmmXg5mgaKQSQ_B6lj8e8
+VAPID_PRIVATE_KEY=Mto2_dOgvBbsY7yxk-Sj6pjqTd9dyi3Rms7GTlfPQD0
+VAPID_SUBJECT=mailto:testing.email111011@gmail.com
 ## Project中安裝MySQL/MariaDB套件
 npm install mysql2
 ## 解釋typescript內容
