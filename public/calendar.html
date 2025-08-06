@@ -44,21 +44,21 @@
         font-weight: bold;
       }
       @media (max-width: 600px) {
-  .ant-picker-dropdown {
-    max-height: 70vh !important;
-    overflow-y: auto !important;
-    top: 10vh !important;
-    left: 0 !important;
-    right: 0 !important;
-    width: 100vw !important;
-    min-width: unset !important;
-    border-radius: 12px !important;
-  }
-  .ant-picker-panel {
-    max-height: 60vh !important;
-    overflow-y: auto !important;
-  }
-}
+        .ant-picker-dropdown {
+          max-height: 70vh !important;
+          overflow-y: auto !important;
+          top: 10vh !important;
+          left: 0 !important;
+          right: 0 !important;
+          width: 100vw !important;
+          min-width: unset !important;
+          border-radius: 12px !important;
+        }
+        .ant-picker-panel {
+          max-height: 60vh !important;
+          overflow-y: auto !important;
+        }
+      }
     </style>
   </head>
   <body>
@@ -339,6 +339,47 @@
         }
       };
 
+      // Function to subscribe to push notifications
+      async function subscribeToPush() {
+        try {
+          // Request notification permission
+          const permission = await Notification.requestPermission();
+          if (permission !== 'granted') {
+            console.log('Notification permission denied');
+            await window.showToast('Please enable notifications to receive reminders', 3000, 'warning');
+            return;
+          }
+
+          // Register Service Worker and subscribe
+          const registration = await navigator.serviceWorker.ready;
+          const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: 'BHQWOcRLHJmk2jhSeme_RxeBdhv9Rx4qPQ8ZMlSinSBUMOWQgP_pJnJBPnVZjFE05XOmmXg5mgaKQSQ_B6lj8e8'
+          });
+
+          // Send subscription to server
+          const token = localStorage.getItem("token") || sessionStorage.getItem("token") || "";
+          const response = await fetch('/subscribe', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(subscription)
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to save subscription');
+          }
+
+          console.log('Push subscription successful');
+          await window.showToast('Successfully subscribed to reminders', 2000, 'success');
+        } catch (error) {
+          console.error('Push subscription error:', error);
+          await window.showToast(`Failed to subscribe to reminders: ${error.message}`, 3000, 'danger');
+        }
+      }
+
       document.addEventListener("DOMContentLoaded", async () => {
         console.log("DOM loaded for calendar.html");
         console.log("Ionic version:", window.Ionic?.version || "Not loaded");
@@ -408,16 +449,15 @@
 
         // Load event list
         await window.fetchEvents();
+
+        // Subscribe to push notifications
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+          await subscribeToPush();
+        } else {
+          console.warn('Push notifications not supported in this browser');
+          await window.showToast('Your browser does not support push notifications', 3000, 'warning');
+        }
       });
-    </script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/serviceworker.js')
-            .then(reg => console.log('Service Worker registered'))
-            .catch(err => console.error('Service Worker registration failed:', err));
-        });
-      }
     </script>
   </body>
 </html>

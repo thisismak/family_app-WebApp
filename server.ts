@@ -11,8 +11,16 @@ import dotenv from 'dotenv';
 import morgan from 'morgan';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import webPush from 'web-push';
 
 dotenv.config();
+
+// Set up VAPID
+webPush.setVapidDetails(
+  process.env.VAPID_SUBJECT!,
+  process.env.VAPID_PUBLIC_KEY!,
+  process.env.VAPID_PRIVATE_KEY!
+);
 
 // MySQL DATETIME 格式化函數
 function toMysqlDatetime(date: Date = new Date()): string {
@@ -112,9 +120,29 @@ async function initDb(): Promise<mysql.Pool> {
         start_datetime DATETIME NOT NULL,
         end_datetime DATETIME,
         reminder_datetime DATETIME,
+        notified BOOLEAN DEFAULT FALSE,
         created_at DATETIME NOT NULL,
         FOREIGN KEY (family_id) REFERENCES family(id) ON DELETE CASCADE,
         FOREIGN KEY (creator_id) REFERENCES user(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Migration: Add 'notified' column if it doesn't exist
+    const [columns] = await db.query('SHOW COLUMNS FROM event LIKE "notified"');
+    if ((columns as any[]).length === 0) {
+      await db.query('ALTER TABLE event ADD COLUMN notified BOOLEAN DEFAULT FALSE');
+      console.log('Added notified column to event table');
+    }
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id INTEGER PRIMARY KEY AUTO_INCREMENT,
+        family_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        subscription JSON NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (family_id) REFERENCES family(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
       )
     `);
 
@@ -190,6 +218,93 @@ const sendResponse = (res: Response, status: number, success: boolean, data?: an
 
 // Promisify exec for async/await
 const execPromise = promisify(exec);
+
+// Subscribe to push notifications
+app.post('/subscribe', authenticate, async (req: AuthRequest, res: Response) => {
+  const user_id = req.user!.userId;
+  const subscription = req.body;
+
+  if (!subscription || !subscription.endpoint) {
+    return sendResponse(res, 400, false, null, 'Invalid subscription data');
+  }
+
+  try {
+    const db = await initDb();
+    const [rows] = await db.query('SELECT family_id FROM family_member WHERE user_id = ?', [user_id]);
+    const family = (rows as any[])[0];
+    if (!family) {
+      console.log('User not in a family:', user_id);
+      return sendResponse(res, 403, false, null, 'User not in a family');
+    }
+
+    // Check for existing subscription
+    const [existing] = await db.query(
+      'SELECT id FROM push_subscriptions WHERE user_id = ? AND family_id = ?',
+      [user_id, family.family_id]
+    );
+    if ((existing as any[]).length > 0) {
+      // Update existing subscription
+      await db.query(
+        'UPDATE push_subscriptions SET subscription = ?, created_at = ? WHERE user_id = ? AND family_id = ?',
+        [JSON.stringify(subscription), toMysqlDatetime(), user_id, family.family_id]
+      );
+    } else {
+      // Insert new subscription
+      await db.query(
+        'INSERT INTO push_subscriptions (family_id, user_id, subscription, created_at) VALUES (?, ?, ?, ?)',
+        [family.family_id, user_id, JSON.stringify(subscription), toMysqlDatetime()]
+      );
+    }
+
+    console.log('Push subscription saved:', { user_id, family_id: family.family_id });
+    sendResponse(res, 201, true, { message: 'Subscription saved' });
+  } catch (error) {
+    console.error('Save subscription error:', error);
+    sendResponse(res, 500, false, null, 'Server error');
+  }
+});
+
+// Check and send notifications for due events
+async function checkAndSendNotifications() {
+  try {
+    const db = await initDb();
+    // Find events where reminder_datetime is due and not yet notified
+    const [events] = await db.query(
+      'SELECT e.id, e.title, e.reminder_datetime, e.family_id, u.username AS creator_username ' +
+      'FROM event e JOIN user u ON e.creator_id = u.id ' +
+      'WHERE e.reminder_datetime <= NOW() AND e.notified = FALSE'
+    );
+
+    for (const event of events as any[]) {
+      // Get all subscriptions for the event's family
+      const [subscriptions] = await db.query(
+        'SELECT subscription FROM push_subscriptions WHERE family_id = ?',
+        [event.family_id]
+      );
+
+      const payload = {
+        title: `Event Reminder: ${event.title}`,
+        body: `Reminder for "${event.title}" at ${new Date(event.reminder_datetime).toLocaleString()} (Created by ${event.creator_username})`
+      };
+
+      // Send notification to each subscription
+      for (const sub of subscriptions as any[]) {
+        try {
+          await webPush.sendNotification(JSON.parse(sub.subscription), JSON.stringify(payload));
+          console.log(`Notification sent for event ${event.id} to subscription`);
+        } catch (error) {
+          console.error(`Failed to send notification for event ${event.id}:`, error);
+        }
+      }
+
+      // Mark event as notified
+      await db.query('UPDATE event SET notified = TRUE WHERE id = ?', [event.id]);
+      console.log(`Event ${event.id} marked as notified`);
+    }
+  } catch (error) {
+    console.error('Notification check failed:', error);
+  }
+}
 
 // Forgot Password Route
 app.post('/forgot-password', async (req: Request, res: Response) => {
@@ -656,7 +771,7 @@ app.get('/calendar', authenticate, async (req: AuthRequest, res: Response) => {
     }
 
     const [events] = await db.query(
-      'SELECT id, title, start_datetime, end_datetime, reminder_datetime, creator_id FROM event WHERE family_id = ?',
+      'SELECT id, title, start_datetime, end_datetime, reminder_datetime, creator_id, notified FROM event WHERE family_id = ?',
       [family.family_id]
     );
     console.log('Fetched events for family:', { family_id: family.family_id, events });
@@ -701,8 +816,8 @@ app.post('/calendar', authenticate, async (req: AuthRequest, res: Response) => {
 
     const created_at = toMysqlDatetime();
     const [result] = await db.query(
-      'INSERT INTO event (family_id, creator_id, title, start_datetime, end_datetime, reminder_datetime, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [family.family_id, user_id, title, start_datetime, end_datetime, reminder_datetime, created_at]
+      'INSERT INTO event (family_id, creator_id, title, start_datetime, end_datetime, reminder_datetime, created_at, notified) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [family.family_id, user_id, title, start_datetime, end_datetime, reminder_datetime, created_at, false]
     );
     console.log('Event created:', { event_id: (result as any).insertId, family_id: family.family_id });
     sendResponse(res, 201, true, { message: 'Event created', event_id: (result as any).insertId });
@@ -951,6 +1066,8 @@ app.post('/messages', authenticate, async (req: AuthRequest, res: Response) => {
 async function startServer() {
   try {
     await initDb();
+    // Start periodic notification check
+    setInterval(checkAndSendNotifications, 60 * 1000); // Run every minute
     httpServer.listen(PORT, () => {
       print(PORT);
       console.log(`Server running on http://localhost:${PORT}`);
