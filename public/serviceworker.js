@@ -40,7 +40,6 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // 更新 cache
         const responseClone = response.clone();
         caches.open(CACHE_NAME).then(cache => {
           cache.put(event.request, responseClone);
@@ -51,15 +50,16 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// Handle push notifications
 self.addEventListener('push', event => {
   const data = event.data.json();
+  const isTaskNotification = data.title.includes('Task Reminder');
+  const redirectUrl = isTaskNotification ? 'https://www.mysandshome.com/tasks.html' : 'https://www.mysandshome.com/calendar.html';
   const options = {
     body: data.body,
     icon: '/assets/icon-192x192.png',
     badge: '/assets/icon-192x192.png',
     data: {
-      url: 'https://www.mysandshome.com/calendar.html' // Redirect to calendar on click
+      url: redirectUrl
     }
   };
   event.waitUntil(
@@ -67,7 +67,6 @@ self.addEventListener('push', event => {
   );
 });
 
-// Handle notification click
 self.addEventListener('notificationclick', event => {
   event.notification.close();
   event.waitUntil(

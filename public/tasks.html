@@ -136,6 +136,26 @@
                   <ion-row>
                     <ion-col>
                       <ion-item>
+                        <ion-select
+                          name="reminder_offset"
+                          id="reminder_offset"
+                          label="Reminder (Optional)"
+                          label-placement="stacked"
+                          placeholder="Select reminder time"
+                          interface="action-sheet"
+                        >
+                          <ion-select-option value="">None</ion-select-option>
+                          <ion-select-option value="1h">1 Hour Before</ion-select-option>
+                          <ion-select-option value="2h">2 Hours Before</ion-select-option>
+                          <ion-select-option value="1d">1 Day Before</ion-select-option>
+                          <ion-select-option value="2d">2 Days Before</ion-select-option>
+                        </ion-select>
+                      </ion-item>
+                    </ion-col>
+                  </ion-row>
+                  <ion-row>
+                    <ion-col>
+                      <ion-item>
                         <ion-select name="priority" id="priority" label="Priority" value="medium">
                           <ion-select-option value="low">Low</ion-select-option>
                           <ion-select-option value="medium">Medium</ion-select-option>
@@ -396,6 +416,7 @@
                 task.description = escapeHtml(task.description || "No description");
                 task.assignee_username = escapeHtml(task.assignee_username || "None");
                 task.due_date = task.due_date && !isNaN(new Date(task.due_date).getTime()) ? task.due_date : null;
+                task.reminder_datetime = task.reminder_datetime && !isNaN(new Date(task.reminder_datetime).getTime()) ? task.reminder_datetime : null;
                 task.priority = ["low", "medium", "high"].includes(task.priority) ? task.priority : "medium";
                 task.status = ["pending", "completed"].includes(task.status) ? task.status : "pending";
                 
@@ -411,6 +432,7 @@
                     <p>${task.description}</p>
                     <p>Assignee: ${task.assignee_username}</p>
                     <p>Due Date: ${task.due_date ? new Date(task.due_date).toLocaleDateString() : "No due date"}</p>
+                    <p>Reminder: ${task.reminder_datetime ? new Date(task.reminder_datetime).toLocaleString() : "No reminder"}</p>
                     <p>Priority: ${task.priority === "low" ? "Low" : task.priority === "medium" ? "Medium" : "High"}</p>
                     <p>Status: ${task.status === "pending" ? "Pending" : "Completed"}</p>
                   </ion-label>
@@ -425,7 +447,6 @@
                   </ion-button>
                 `;
                 taskList.appendChild(item);
-                // 添加 click 和 touchstart 事件
                 const toggleButton = document.getElementById(`toggle-${task.id}`);
                 const editButton = document.getElementById(`edit-${task.id}`);
                 const deleteButton = document.getElementById(`delete-${task.id}`);
@@ -490,6 +511,21 @@
           document.getElementById("assignee_id").value = task.assignee_id || "";
           document.getElementById("due_date").value = task.due_date || "";
           document.getElementById("priority").value = task.priority;
+          // 將 reminder_datetime 轉換回 reminder_offset
+          let reminder_offset = "";
+          if (task.reminder_datetime && task.due_date) {
+            const dueDate = new Date(task.due_date);
+            const reminderDate = new Date(task.reminder_datetime);
+            const diffMs = dueDate.getTime() - reminderDate.getTime();
+            const offsetMap = {
+              "3600000": "1h", // 1 hour
+              "7200000": "2h", // 2 hours
+              "86400000": "1d", // 1 day
+              "172800000": "2d", // 2 days
+            };
+            reminder_offset = offsetMap[diffMs.toString()] || "";
+          }
+          document.getElementById("reminder_offset").value = reminder_offset;
           formTitle.textContent = "Edit Task";
           submitTaskButton.textContent = "Save Task";
           cancelEditButton.style.display = "block";
@@ -532,6 +568,7 @@
           formTitle.textContent = "Add Task";
           submitTaskButton.textContent = "Add Task";
           cancelEditButton.style.display = "none";
+          document.getElementById("reminder_offset").value = "";
         }
 
         cancelEditButton?.addEventListener("click", () => {
@@ -559,6 +596,7 @@
           const assignee_id = formData.get("assignee_id") || null;
           const due_date = formData.get("due_date")?.toString();
           const priority = formData.get("priority")?.toString() || "medium";
+          const reminder_offset = formData.get("reminder_offset")?.toString() || null;
 
           if (!title) {
             await showToast("Task title is required", 2000, "danger");
@@ -573,7 +611,25 @@
             return;
           }
 
-          console.log("任務表單提交:", { taskId, title, description, assignee_id, due_date, priority });
+          // 計算 reminder_datetime 基於 due_date 和 reminder_offset
+          let reminder_datetime = null;
+          if (due_date && reminder_offset) {
+            const dueDate = new Date(due_date);
+            if (!isNaN(dueDate.getTime())) {
+              const offsetMap = {
+                "1h": 60 * 60 * 1000,
+                "2h": 2 * 60 * 60 * 1000,
+                "1d": 24 * 60 * 60 * 1000,
+                "2d": 2 * 24 * 60 * 60 * 1000,
+              };
+              const offsetMs = offsetMap[reminder_offset];
+              if (offsetMs) {
+                reminder_datetime = new Date(dueDate.getTime() - offsetMs).toISOString().split("T")[0] + " " + dueDate.toTimeString().split(" ")[0];
+              }
+            }
+          }
+
+          console.log("任務表單提交:", { taskId, title, description, assignee_id, due_date, priority, reminder_datetime });
 
           try {
             const url = taskId ? `${API_BASE_URL}/tasks/${taskId}` : `${API_BASE_URL}/tasks`;
@@ -584,6 +640,7 @@
               assignee_id: assignee_id ? Number(assignee_id) : null,
               due_date: due_date ? new Date(due_date).toISOString().split("T")[0] : null,
               priority,
+              reminder_datetime,
             };
             if (method === "PATCH") delete body.status;
             console.log(`正在發送任務${taskId ? "更新" : "創建"}請求`);
