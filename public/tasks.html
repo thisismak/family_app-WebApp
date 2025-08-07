@@ -170,6 +170,17 @@
         ? 'https://www.mysandshome.com'
         : 'http://localhost:8100';
 
+      // HTML escape function to handle special characters
+      function escapeHtml(unsafe) {
+        if (!unsafe) return '';
+        return unsafe
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
       document.addEventListener("DOMContentLoaded", async () => {
         console.log("DOM 已載入 tasks.html");
         console.log("Ionic 版本:", window.Ionic?.version || "未載入");
@@ -242,7 +253,7 @@
             const response = await fetch(`${API_BASE_URL}/my-families`, {
               method: "GET",
               headers: {
-                "Content-Type": "application/json",
+                "Content-Type": "application/json; charset=utf-8",
                 Authorization: `Bearer ${token}`,
               },
             });
@@ -291,7 +302,7 @@
             const response = await fetch(`${API_BASE_URL}/family/members?family_id=${familyId}`, {
               method: "GET",
               headers: {
-                "Content-Type": "application/json",
+                "Content-Type": "application/json; charset=utf-8",
                 Authorization: `Bearer ${token}`,
               },
             });
@@ -314,7 +325,7 @@
               data.data.members.forEach((member) => {
                 const option = document.createElement("ion-select-option");
                 option.value = member.user_id;
-                option.textContent = member.username;
+                option.textContent = escapeHtml(member.username);
                 assigneeSelect.appendChild(option);
                 console.log(`已添加成員選項: ${member.username} (ID: ${member.user_id})`);
               });
@@ -342,7 +353,7 @@
             const response = await fetch(url, {
               method: "GET",
               headers: {
-                "Content-Type": "application/json",
+                "Content-Type": "application/json; charset=utf-8",
                 Authorization: `Bearer ${token}`,
               },
             });
@@ -377,17 +388,25 @@
               taskList.innerHTML = `<ion-item><ion-label>No tasks found</ion-label></ion-item>`;
             } else {
               tasks.forEach((task) => {
+                // 資料預處理
+                task.title = escapeHtml(task.title || "Untitled Task");
+                task.description = escapeHtml(task.description || "No description");
+                task.assignee_username = escapeHtml(task.assignee_username || "None");
+                task.due_date = task.due_date && !isNaN(new Date(task.due_date).getTime()) ? task.due_date : null;
+                task.priority = ["low", "medium", "high"].includes(task.priority) ? task.priority : "medium";
+                task.status = ["pending", "completed"].includes(task.status) ? task.status : "pending";
+                
                 console.log("渲染任務:", task);
                 const item = document.createElement("ion-item");
                 item.className = task.status === "completed" ? "completed" : "";
                 item.innerHTML = `
                   <ion-avatar slot="start">
-                    <img src="/assets/user-${task.assignee_id || 'default'}.png" alt="${task.assignee_username || 'No assignee'}" onerror="this.src='/assets/user-default.png'" />
+                    <img src="/assets/user-${task.assignee_id || 'default'}.png" alt="${task.assignee_username}" onerror="this.src='/assets/user-default.png'" />
                   </ion-avatar>
                   <ion-label>
                     <h2>${task.title}</h2>
-                    <p>${task.description || "No description"}</p>
-                    <p>Assignee: ${task.assignee_username || "None"}</p>
+                    <p>${task.description}</p>
+                    <p>Assignee: ${task.assignee_username}</p>
                     <p>Due Date: ${task.due_date ? new Date(task.due_date).toLocaleDateString() : "No due date"}</p>
                     <p>Priority: ${task.priority === "low" ? "Low" : task.priority === "medium" ? "Medium" : "High"}</p>
                     <p>Status: ${task.status === "pending" ? "Pending" : "Completed"}</p>
@@ -403,9 +422,25 @@
                   </ion-button>
                 `;
                 taskList.appendChild(item);
-                document.getElementById(`toggle-${task.id}`)?.addEventListener("click", () => toggleTaskStatus(task.id, task.status));
-                document.getElementById(`edit-${task.id}`)?.addEventListener("click", () => editTask(task));
-                document.getElementById(`delete-${task.id}`)?.addEventListener("click", () => deleteTask(task.id));
+                // 添加 click 和 touchstart 事件
+                const toggleButton = document.getElementById(`toggle-${task.id}`);
+                const editButton = document.getElementById(`edit-${task.id}`);
+                const deleteButton = document.getElementById(`delete-${task.id}`);
+                toggleButton?.addEventListener("click", () => toggleTaskStatus(task.id, task.status));
+                toggleButton?.addEventListener("touchstart", (e) => {
+                  e.preventDefault();
+                  toggleTaskStatus(task.id, task.status);
+                });
+                editButton?.addEventListener("click", () => editTask(task));
+                editButton?.addEventListener("touchstart", (e) => {
+                  e.preventDefault();
+                  editTask(task);
+                });
+                deleteButton?.addEventListener("click", () => deleteTask(task.id));
+                deleteButton?.addEventListener("touchstart", (e) => {
+                  e.preventDefault();
+                  deleteTask(task.id);
+                });
               });
             }
           } catch (error) {
@@ -421,7 +456,7 @@
             const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
               method: "PATCH",
               headers: {
-                "Content-Type": "application/json",
+                "Content-Type": "application/json; charset=utf-8",
                 Authorization: `Bearer ${token}`,
               },
               body: JSON.stringify({ status: newStatus }),
@@ -466,7 +501,7 @@
             const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
               method: "DELETE",
               headers: {
-                "Content-Type": "application/json",
+                "Content-Type": "application/json; charset=utf-8",
                 Authorization: `Bearer ${token}`,
               },
             });
@@ -510,7 +545,7 @@
         });
 
         await renderTasks();
-        
+
         taskForm?.addEventListener("submit", async (event) => {
           event.preventDefault();
           const form = event.target;
@@ -552,7 +587,7 @@
             const response = await fetch(url, {
               method,
               headers: {
-                "Content-Type": "application/json",
+                "Content-Type": "application/json; charset=utf-8",
                 Authorization: `Bearer ${token}`,
               },
               body: JSON.stringify(body),

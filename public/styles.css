@@ -25,6 +25,7 @@ ion-toolbar {
 
 ion-content {
   --background: var(--light-pink);
+  --overflow: auto;
 }
 
 ion-card {
@@ -91,6 +92,16 @@ ion-icon {
   color: var(--text-dark);
 }
 
+ion-list {
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+ion-label {
+  white-space: normal !important;
+  overflow-wrap: break-word;
+}
+
 @media (max-width: 768px) {
   ion-card {
     max-width: 90%;
@@ -100,5 +111,15 @@ ion-icon {
   }
   .welcome-message {
     padding: 16px;
+  }
+  ion-avatar {
+    width: 32px;
+    height: 32px;
+    margin-right: 4px;
+  }
+  ion-button[slot="end"] {
+    margin-left: 4px;
+    --padding-start: 8px;
+    --padding-end: 8px;
   }
 }
