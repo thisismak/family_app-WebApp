@@ -6,13 +6,15 @@ const urlsToCache = [
   '/assets/family-logo.png', // Replaced favicon.png with an existing file
 ];
 
+// 安裝時快取資源，但不自動 skipWaiting，讓新版等待用戶關閉所有分頁才啟用
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(urlsToCache))
       .then(() => {
         console.log(`Service Worker installed with cache: ${CACHE_NAME}`);
-        return self.skipWaiting();
+        // 不自動啟用新版，避免用戶頻繁收到更新提示
+        // return self.skipWaiting();
       })
       .catch(err => console.error('Cache addAll failed:', err))
   );
