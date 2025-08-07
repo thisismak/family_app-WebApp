@@ -274,5 +274,6 @@ pm2 log family-app
 ## 檢查SQL內容
 mysql -u app_user -psam1_sql_password -e "SHOW DATABASES;"
 mysql -u app_user -psam1_sql_password -e "SHOW TABLES FROM family_app;"
+mysql -u app_user -psam1_sql_password -e "USE family_app; SHOW CREATE TABLE event;"
 mysql -u app_user -psam1_sql_password -e "USE family_app; DESC event;"
 mysql -u app_user -psam1_sql_password -e "USE family_app; SELECT * FROM event;"
