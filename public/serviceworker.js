@@ -1,4 +1,4 @@
-const CACHE_NAME = 'family-app-cache-v5'; // Updated version
+const CACHE_NAME = 'family-app-cache-v6'; // Updated version
 const urlsToCache = [
   '/index.html',
   '/styles.css',
@@ -50,5 +50,43 @@ self.addEventListener('fetch', event => {
         return response;
       })
       .catch(() => caches.match(event.request) || caches.match('/index.html'))
+  );
+});
+
+// 處理推播通知
+self.addEventListener('push', function(event) {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (e) {
+    data = { title: 'Family App', body: 'You have a new reminder!' };
+  }
+  const title = data.title || 'Family App';
+  const options = {
+    body: data.body || 'You have a new reminder!',
+    icon: '/assets/family-logo.png',
+    badge: '/assets/family-logo.png',
+    data: data.url ? { url: data.url } : {},
+  };
+  event.waitUntil(
+    self.registration.showNotification(title, options)
+  );
+});
+
+// 點擊通知時的行為
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  const url = event.notification.data && event.notification.data.url ? event.notification.data.url : '/calendar.html';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+      for (let client of windowClients) {
+        if (client.url === url && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(url);
+      }
+    })
   );
 });
