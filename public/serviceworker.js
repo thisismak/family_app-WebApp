@@ -1,23 +1,20 @@
-const CACHE_NAME = 'family-app-cache-v2';
+const CACHE_NAME = 'family-app-cache-v4'; // 更新版本號
 const urlsToCache = [
-  '/',
   '/index.html',
-  '/calendar.html',
-  '/chat.html',
-  '/family.html',
-  '/login.html',
-  '/register.html',
-  '/tasks.html',
   '/styles.css',
-  '/assets/family-logo.png',
-  '/assets/icon-192x192.png',
-  '/assets/icon-512x512.png'
+  '/client.js',
+  '/assets/icon/favicon.png',
+  // 其他需要緩存的資源
 ];
 
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(urlsToCache))
+      .then(() => {
+        console.log(`Service Worker installed with cache: ${CACHE_NAME}`);
+        return self.skipWaiting(); // 立即進入等待狀態
+      })
   );
 });
 
@@ -28,11 +25,15 @@ self.addEventListener('activate', event => {
       Promise.all(
         cacheNames.map(cacheName => {
           if (!cacheWhitelist.includes(cacheName)) {
+            console.log(`Deleting old cache: ${cacheName}`);
             return caches.delete(cacheName);
           }
         })
       )
-    )
+    ).then(() => {
+      console.log(`Service Worker activated: ${CACHE_NAME}`);
+      return self.clients.claim(); // 立即控制所有頁面
+    })
   );
 });
 
@@ -40,37 +41,14 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // 更新 cache
-        const responseClone = response.clone();
-        caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, responseClone);
-        });
+        if (response.status === 200) {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseClone);
+          });
+        }
         return response;
       })
-      .catch(() => caches.match(event.request))
-  );
-});
-
-// Handle push notifications
-self.addEventListener('push', event => {
-  const data = event.data.json();
-  const options = {
-    body: data.body,
-    icon: '/assets/icon-192x192.png',
-    badge: '/assets/icon-192x192.png',
-    data: {
-      url: 'https://www.mysandshome.com/calendar.html' // Redirect to calendar on click
-    }
-  };
-  event.waitUntil(
-    self.registration.showNotification(data.title, options)
-  );
-});
-
-// Handle notification click
-self.addEventListener('notificationclick', event => {
-  event.notification.close();
-  event.waitUntil(
-    clients.openWindow(event.notification.data.url)
+      .catch(() => caches.match(event.request) || caches.match('/index.html'))
   );
 });

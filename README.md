@@ -106,6 +106,7 @@ server {
     location = /manifest.json {
         root /var/www/family-app/public;
         expires off;
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate";
         access_log off;
     }
 
@@ -113,6 +114,7 @@ server {
     location = /serviceworker.js {
         root /var/www/family-app/public;
         expires off;
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate";
         access_log off;
     }
 
@@ -120,13 +122,23 @@ server {
     location /.well-known/ {
         root /var/www/family-app/public;
         expires off;
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate";
         access_log off;
     }
 
-    # 靜態檔案
-    location ~* \.(html|css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+    # HTML、CSS、JS 文件，禁用長期緩存，強制驗證
+    location ~* \.(html|css|js)$ {
         root /var/www/family-app/public;
-        expires 30d;
+        expires -1;
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate";
+        access_log off;
+    }
+
+    # 圖片和其他靜態資源，設置短暫緩存
+    location ~* \.(png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        root /var/www/family-app/public;
+        expires 1h; # 緩存 1 小時
+        add_header Cache-Control "public, must-revalidate";
         access_log off;
     }
 
