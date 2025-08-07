@@ -141,36 +141,21 @@
         const [title, setTitle] = useState('');
         const [startDateTime, setStartDateTime] = useState(null);
         const [endDateTime, setEndDateTime] = useState(null);
-        const [reminderOffset, setReminderOffset] = useState('');
+        const [reminderDateTime, setReminderDateTime] = useState(null);
 
         const handleSubmit = async (e) => {
           e.preventDefault();
-          let reminder_datetime = null;
-          if (startDateTime && reminderOffset) {
-            const startDate = startDateTime.toDate();
-            const offsetMap = {
-              '1h': 60 * 60 * 1000,
-              '2h': 2 * 60 * 60 * 1000,
-              '1d': 24 * 60 * 60 * 1000,
-              '2d': 2 * 24 * 60 * 60 * 1000,
-            };
-            const offsetMs = offsetMap[reminderOffset];
-            if (offsetMs) {
-              reminder_datetime = window.dayjs(startDate.getTime() - offsetMs).format('YYYY-MM-DD HH:mm:ss');
-            }
-          }
-
           const eventData = {
             title,
             start_datetime: startDateTime ? startDateTime.format('YYYY-MM-DD HH:mm:ss') : null,
             end_datetime: endDateTime ? endDateTime.format('YYYY-MM-DD HH:mm:ss') : null,
-            reminder_datetime,
+            reminder_datetime: reminderDateTime ? reminderDateTime.format('YYYY-MM-DD HH:mm:ss') : null,
           };
           await onSubmit(eventData);
           setTitle('');
           setStartDateTime(null);
           setEndDateTime(null);
-          setReminderOffset('');
+          setReminderDateTime(null);
         };
 
         return (
@@ -220,21 +205,14 @@
               <ion-row>
                 <ion-col>
                   <ion-item>
-                    <ion-select
-                      name="reminder_offset"
-                      value={reminderOffset}
-                      onIonChange={(e) => setReminderOffset(e.detail.value)}
-                      label="Reminder (Optional)"
-                      label-placement="stacked"
+                    <DatePicker
+                      showTime={{ format: 'HH' }}
+                      format="YYYY-MM-DD HH"
+                      value={reminderDateTime}
+                      onChange={setReminderDateTime}
                       placeholder="Select reminder time"
-                      interface="action-sheet"
-                    >
-                      <ion-select-option value="">None</ion-select-option>
-                      <ion-select-option value="1h">1 Hour Before</ion-select-option>
-                      <ion-select-option value="2h">2 Hours Before</ion-select-option>
-                      <ion-select-option value="1d">1 Day Before</ion-select-option>
-                      <ion-select-option value="2d">2 Days Before</ion-select-option>
-                    </ion-select>
+                      needConfirm
+                    />
                   </ion-item>
                 </ion-col>
               </ion-row>
@@ -254,42 +232,13 @@
         const [form] = Form.useForm();
         const [submitting, setSubmitting] = useState(false);
 
-        const calculateReminderOffset = (start_datetime, reminder_datetime) => {
-          if (!start_datetime || !reminder_datetime) return '';
-          const startDate = window.dayjs(start_datetime).toDate();
-          const reminderDate = window.dayjs(reminder_datetime).toDate();
-          const diffMs = startDate.getTime() - reminderDate.getTime();
-          const offsetMap = {
-            3600000: '1h',
-            7200000: '2h',
-            86400000: '1d',
-            172800000: '2d',
-          };
-          return offsetMap[diffMs] || '';
-        };
-
         const handleSubmit = async (values) => {
           setSubmitting(true);
-          let reminder_datetime = null;
-          if (values.start_datetime && values.reminder_offset) {
-            const startDate = values.start_datetime.toDate();
-            const offsetMap = {
-              '1h': 60 * 60 * 1000,
-              '2h': 2 * 60 * 60 * 1000,
-              '1d': 24 * 60 * 60 * 1000,
-              '2d': 2 * 24 * 60 * 60 * 1000,
-            };
-            const offsetMs = offsetMap[values.reminder_offset];
-            if (offsetMs) {
-              reminder_datetime = window.dayjs(startDate.getTime() - offsetMs).format('YYYY-MM-DD HH:mm:ss');
-            }
-          }
-
           const eventData = {
             title: values.title,
             start_datetime: values.start_datetime ? values.start_datetime.format('YYYY-MM-DD HH:mm:ss') : null,
             end_datetime: values.end_datetime ? values.end_datetime.format('YYYY-MM-DD HH:mm:ss') : null,
-            reminder_datetime,
+            reminder_datetime: values.reminder_datetime ? values.reminder_datetime.format('YYYY-MM-DD HH:mm:ss') : null,
           };
           await onSubmit(eventData);
           setSubmitting(false);
@@ -308,7 +257,7 @@
                 title: initialValues.title,
                 start_datetime: initialValues.start_datetime ? window.dayjs(initialValues.start_datetime) : null,
                 end_datetime: initialValues.end_datetime ? window.dayjs(initialValues.end_datetime) : null,
-                reminder_offset: calculateReminderOffset(initialValues.start_datetime, initialValues.reminder_datetime),
+                reminder_datetime: initialValues.reminder_datetime ? window.dayjs(initialValues.reminder_datetime) : null,
               }}
               onFinish={handleSubmit}
             >
@@ -337,18 +286,13 @@
                   style={{ width: '100%' }}
                 />
               </Form.Item>
-              <Form.Item name="reminder_offset">
-                <ion-select
-                  name="reminder_offset"
-                  interface="action-sheet"
+              <Form.Item name="reminder_datetime">
+                <DatePicker
+                  showTime={{ format: 'HH' }}
+                  format="YYYY-MM-DD HH"
                   placeholder="Select reminder time"
-                >
-                  <ion-select-option value="">None</ion-select-option>
-                  <ion-select-option value="1h">1 Hour Before</ion-select-option>
-                  <ion-select-option value="2h">2 Hours Before</ion-select-option>
-                  <ion-select-option value="1d">1 Day Before</ion-select-option>
-                  <ion-select-option value="2d">2 Days Before</ion-select-option>
-                </ion-select>
+                  style={{ width: '100%' }}
+                />
               </Form.Item>
               <Form.Item>
                 <Button type="primary" htmlType="submit" loading={submitting} block>
@@ -440,13 +384,23 @@
           }
         };
 
+        // 重新赋值，确保 window.handleEdit 是函数
         window.handleEdit = function(event) {
+          // 通过 React 的 root 组件暴露一个方法
+          // 这里直接触发 React 的 setState
           const root = document.getElementById("create-event-root");
           if (root && root._reactRootContainer) {
+            // 触发 React 组件的 openEditModal
+            // 你可以用 window.dispatchEvent 或自定义事件通知 React
             window.dispatchEvent(new CustomEvent("openEditModal", { detail: event }));
           }
         };
         window.handleDelete = handleDelete;
+
+        const openEditModal = (event) => {
+          setEditingEvent(event);
+          setEditModalVisible(true);
+        };
 
         return (
           <>

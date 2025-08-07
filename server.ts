@@ -75,16 +75,18 @@ async function initDb(): Promise<mysql.Pool> {
       password: process.env.DB_PASSWORD || 'sam1_sql_password',
       database: process.env.DB_NAME || 'family_app',
       port: Number(process.env.DB_PORT) || 3306,
-      charset: 'utf8mb4',
+      charset: 'utf8mb4', // 明確指定 utf8mb4 字符集
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0
     });
     console.log('MySQL connected with charset: utf8mb4');
 
+    // 確保資料庫使用 utf8mb4
     await db.query('ALTER DATABASE family_app CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;');
     console.log('Database character set set to utf8mb4');
 
+    // 創建表，明確指定 utf8mb4
     await db.query(`
       CREATE TABLE IF NOT EXISTS user (
         id INTEGER PRIMARY KEY AUTO_INCREMENT,
@@ -131,6 +133,7 @@ async function initDb(): Promise<mysql.Pool> {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
+    // 遷移：添加 notified 欄位（如果不存在）
     const [eventColumns] = await db.query('SHOW COLUMNS FROM event LIKE "notified"');
     if ((eventColumns as any[]).length === 0) {
       await db.query('ALTER TABLE event ADD COLUMN notified BOOLEAN DEFAULT FALSE');
@@ -158,8 +161,6 @@ async function initDb(): Promise<mysql.Pool> {
         title VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
         description TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
         due_date DATE,
-        reminder_datetime DATETIME,
-        notified BOOLEAN DEFAULT FALSE,
         priority ENUM('low', 'medium', 'high') NOT NULL DEFAULT 'medium',
         status ENUM('pending', 'completed') NOT NULL DEFAULT 'pending',
         created_at DATETIME NOT NULL,
@@ -168,17 +169,6 @@ async function initDb(): Promise<mysql.Pool> {
         FOREIGN KEY (assignee_id) REFERENCES user(id) ON DELETE SET NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
-
-    const [taskColumns] = await db.query('SHOW COLUMNS FROM task LIKE "reminder_datetime"');
-    if ((taskColumns as any[]).length === 0) {
-      await db.query('ALTER TABLE task ADD COLUMN reminder_datetime DATETIME');
-      console.log('Added reminder_datetime column to task table');
-    }
-    const [notifiedColumn] = await db.query('SHOW COLUMNS FROM task LIKE "notified"');
-    if ((notifiedColumn as any[]).length === 0) {
-      await db.query('ALTER TABLE task ADD COLUMN notified BOOLEAN DEFAULT FALSE');
-      console.log('Added notified column to task table');
-    }
 
     await db.query(`
       CREATE TABLE IF NOT EXISTS message (
@@ -203,6 +193,7 @@ async function initDb(): Promise<mysql.Pool> {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
+    // 遷移現有表到 utf8mb4
     const tables = ['user', 'family', 'family_member', 'event', 'push_subscriptions', 'task', 'message', 'password_reset_tokens'];
     for (const table of tables) {
       const [tableStatus] = await db.query(`SHOW TABLE STATUS WHERE Name = ?`, [table]);
@@ -212,6 +203,7 @@ async function initDb(): Promise<mysql.Pool> {
       }
     }
 
+    // 檢查並修正特定欄位的字符集
     await db.query(`
       ALTER TABLE user 
       MODIFY COLUMN username VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -273,8 +265,10 @@ const sendResponse = (res: Response, status: number, success: boolean, data?: an
   res.status(status).json({ success, data, error });
 };
 
+// Promisify exec for async/await
 const execPromise = promisify(exec);
 
+// Subscribe to push notifications
 app.post('/subscribe', authenticate, async (req: AuthRequest, res: Response) => {
   const user_id = req.user!.userId;
   const subscription = req.body;
@@ -292,16 +286,19 @@ app.post('/subscribe', authenticate, async (req: AuthRequest, res: Response) => 
       return sendResponse(res, 403, false, null, 'User not in a family');
     }
 
+    // Check for existing subscription
     const [existing] = await db.query(
       'SELECT id FROM push_subscriptions WHERE user_id = ? AND family_id = ?',
       [user_id, family.family_id]
     );
     if ((existing as any[]).length > 0) {
+      // Update existing subscription
       await db.query(
         'UPDATE push_subscriptions SET subscription = ?, created_at = ? WHERE user_id = ? AND family_id = ?',
         [JSON.stringify(subscription), toMysqlDatetime(), user_id, family.family_id]
       );
     } else {
+      // Insert new subscription
       await db.query(
         'INSERT INTO push_subscriptions (family_id, user_id, subscription, created_at) VALUES (?, ?, ?, ?)',
         [family.family_id, user_id, JSON.stringify(subscription), toMysqlDatetime()]
@@ -316,9 +313,11 @@ app.post('/subscribe', authenticate, async (req: AuthRequest, res: Response) => 
   }
 });
 
+// Check and send notifications for due events
 async function checkAndSendNotifications() {
   try {
     const db = await initDb();
+    // Find events where reminder_datetime is due and not yet notified
     const [events] = await db.query(
       'SELECT e.id, e.title, e.reminder_datetime, e.family_id, u.username AS creator_username ' +
       'FROM event e JOIN user u ON e.creator_id = u.id ' +
@@ -326,6 +325,7 @@ async function checkAndSendNotifications() {
     );
 
     for (const event of events as any[]) {
+      // Get all subscriptions for the event's family
       const [subscriptions] = await db.query(
         'SELECT subscription FROM push_subscriptions WHERE family_id = ?',
         [event.family_id]
@@ -336,6 +336,7 @@ async function checkAndSendNotifications() {
         body: `🎉Your fun event "${event.title}" starts at ${new Date(event.reminder_datetime).toLocaleTimeString()}!🎉`
       };
 
+      // Send notification to each subscription
       for (const sub of subscriptions as any[]) {
         try {
           await webPush.sendNotification(JSON.parse(sub.subscription), JSON.stringify(payload));
@@ -345,44 +346,16 @@ async function checkAndSendNotifications() {
         }
       }
 
+      // Mark event as notified
       await db.query('UPDATE event SET notified = TRUE WHERE id = ?', [event.id]);
       console.log(`Event ${event.id} marked as notified`);
-    }
-
-    const [tasks] = await db.query(
-      'SELECT t.id, t.title, t.reminder_datetime, t.family_id, t.assignee_id, u.username AS assignee_username ' +
-      'FROM task t LEFT JOIN user u ON t.assignee_id = u.id ' +
-      'WHERE t.reminder_datetime <= NOW() AND t.notified = FALSE AND t.status = "pending"'
-    );
-
-    for (const task of tasks as any[]) {
-      const [subscriptions] = await db.query(
-        'SELECT subscription FROM push_subscriptions WHERE family_id = ? AND user_id = ?',
-        [task.family_id, task.assignee_id]
-      );
-
-      const payload = {
-        title: `🔔 Task Reminder: ${task.title} 🔔`,
-        body: `Your task "${task.title}" is due on ${new Date(task.due_date).toLocaleDateString()}!`
-      };
-
-      for (const sub of subscriptions as any[]) {
-        try {
-          await webPush.sendNotification(JSON.parse(sub.subscription), JSON.stringify(payload));
-          console.log(`Notification sent for task ${task.id} to assignee ${task.assignee_username}`);
-        } catch (error) {
-          console.error(`Failed to send notification for task ${task.id}:`, error);
-        }
-      }
-
-      await db.query('UPDATE task SET notified = TRUE WHERE id = ?', [task.id]);
-      console.log(`Task ${task.id} marked as notified`);
     }
   } catch (error) {
     console.error('Notification check failed:', error);
   }
 }
 
+// Forgot Password Route
 app.post('/forgot-password', async (req: Request, res: Response) => {
   const { email } = req.body;
   console.log('Forgot password attempt:', { email });
@@ -401,7 +374,7 @@ app.post('/forgot-password', async (req: Request, res: Response) => {
     }
 
     const resetToken = jwt.sign({ userId: user.id, purpose: 'password_reset' }, JWT_SECRET, { expiresIn: '1h' });
-    const expiresAt = toMysqlDatetime(new Date(Date.now() + 3600000));
+    const expiresAt = toMysqlDatetime(new Date(Date.now() + 3600000)); // 1 hour from now
     await db.query('INSERT INTO password_reset_tokens (user_id, token, expires_at, used) VALUES (?, ?, ?, ?)', [
       user.id,
       resetToken,
@@ -427,6 +400,7 @@ app.post('/forgot-password', async (req: Request, res: Response) => {
   }
 });
 
+// Reset Password Route
 app.post('/reset-password', async (req: Request, res: Response) => {
   const { token, newPassword } = req.body;
   console.log('Reset password attempt:', { tokenLength: token?.length, newPasswordLength: newPassword?.length });
@@ -480,6 +454,7 @@ app.post('/reset-password', async (req: Request, res: Response) => {
   }
 });
 
+// Socket.IO Authentication and Events
 io.use(async (socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) {
@@ -554,6 +529,7 @@ io.on('connection', async (socket) => {
   }
 });
 
+// REST API Routes
 app.get('/health', async (req: Request, res: Response) => {
   try {
     const db = await initDb();
@@ -866,8 +842,10 @@ app.post('/calendar', authenticate, async (req: AuthRequest, res: Response) => {
     return sendResponse(res, 400, false, null, 'Title must be 100 characters or less');
   }
 
+  // 修正：將 ISO 格式字串轉為 MySQL DATETIME 格式
   function fixDatetime(dt: string | undefined): string | null {
     if (!dt) return null;
+    // 直接用 new Date 轉換
     const d = new Date(dt);
     if (isNaN(d.getTime())) return null;
     return toMysqlDatetime(d);
@@ -907,6 +885,7 @@ app.patch('/calendar/:id', authenticate, async (req: AuthRequest, res: Response)
     return sendResponse(res, 400, false, null, 'Title must be 100 characters or less');
   }
 
+  // 修正：將 ISO 格式字串轉為 MySQL DATETIME 格式
   function fixDatetime(dt: string | undefined): string | null {
     if (!dt) return null;
     const d = new Date(dt);
@@ -931,6 +910,7 @@ app.patch('/calendar/:id', authenticate, async (req: AuthRequest, res: Response)
       return sendResponse(res, 404, false, null, 'Event not found');
     }
 
+    // Restrict updates to event creator or family admin
     const eventData = (event as any[])[0];
     const [isAdmin] = await db.query('SELECT role FROM family_member WHERE user_id = ? AND family_id = ?', [user_id, family.family_id]);
     const isAdminRole = (isAdmin as any[])[0]?.role === 'admin';
@@ -943,7 +923,7 @@ app.patch('/calendar/:id', authenticate, async (req: AuthRequest, res: Response)
     if (start_datetime !== undefined) updates.start_datetime = start_datetime;
     if (end_datetime !== undefined) updates.end_datetime = end_datetime;
     if (reminder_datetime !== undefined) updates.reminder_datetime = reminder_datetime;
-    if (reminder_datetime !== undefined) updates.notified = false;
+    if (reminder_datetime !== undefined) updates.notified = false; // Reset notified flag if reminder changes
 
     if (Object.keys(updates).length === 0) {
       return sendResponse(res, 400, false, null, 'No fields to update');
@@ -978,6 +958,7 @@ app.delete('/calendar/:id', authenticate, async (req: AuthRequest, res: Response
       return sendResponse(res, 404, false, null, 'Event not found');
     }
 
+    // Restrict deletion to event creator or family admin
     const eventData = (event as any[])[0];
     const [isAdmin] = await db.query('SELECT role FROM family_member WHERE user_id = ? AND family_id = ?', [user_id, family.family_id]);
     const isAdminRole = (isAdmin as any[])[0]?.role === 'admin';
@@ -1009,7 +990,7 @@ app.get('/tasks', authenticate, async (req: AuthRequest, res: Response) => {
     }
 
     let sql = 
-      'SELECT t.id, t.title, t.description, t.due_date, t.reminder_datetime, t.priority, t.status, t.creator_id, t.assignee_id, u.username AS assignee_username' +
+      'SELECT t.id, t.title, t.description, t.due_date, t.priority, t.status, t.creator_id, t.assignee_id, u.username AS assignee_username' +
       ' FROM task t LEFT JOIN user u ON t.assignee_id = u.id WHERE t.family_id = ?';
     const params = [family.family_id];
 
@@ -1041,7 +1022,7 @@ app.get('/tasks', authenticate, async (req: AuthRequest, res: Response) => {
 
 app.post('/tasks', authenticate, async (req: AuthRequest, res: Response) => {
   const user_id = req.user!.userId;
-  const { title, description, assignee_id, due_date, reminder_datetime, priority } = req.body;
+  const { title, description, assignee_id, due_date, priority } = req.body;
 
   if (!title || typeof title !== 'string' || title.length > 100) {
     return sendResponse(res, 400, false, null, 'Title is required and must be a string (max 100 characters)');
@@ -1049,15 +1030,6 @@ app.post('/tasks', authenticate, async (req: AuthRequest, res: Response) => {
   if (priority && !['low', 'medium', 'high'].includes(priority)) {
     return sendResponse(res, 400, false, null, 'Priority must be low, medium, or high');
   }
-
-  function fixDatetime(dt: string | undefined): string | null {
-    if (!dt) return null;
-    const d = new Date(dt);
-    if (isNaN(d.getTime())) return null;
-    return toMysqlDatetime(d);
-  }
-  const fixed_due_date = fixDatetime(due_date);
-  const fixed_reminder_datetime = fixDatetime(reminder_datetime);
 
   try {
     const db = await initDb();
@@ -1078,10 +1050,10 @@ app.post('/tasks', authenticate, async (req: AuthRequest, res: Response) => {
       }
 
       const created_at = toMysqlDatetime();
-      console.log('Inserting task:', { family_id: family.family_id, creator_id: user_id, assignee_id, title, description, due_date: fixed_due_date, reminder_datetime: fixed_reminder_datetime, priority, created_at });
+      console.log('Inserting task:', { family_id: family.family_id, creator_id: user_id, assignee_id, title, description, due_date, priority, created_at });
       const [result] = await db.query(
-        'INSERT INTO task (family_id, creator_id, assignee_id, title, description, due_date, reminder_datetime, priority, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [family.family_id, user_id, assignee_id || null, title, description || null, fixed_due_date || null, fixed_reminder_datetime || null, priority || 'medium', 'pending', created_at]
+        'INSERT INTO task (family_id, creator_id, assignee_id, title, description, due_date, priority, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [family.family_id, user_id, assignee_id || null, title, description || null, due_date || null, priority || 'medium', 'pending', created_at]
       );
       await db.query('COMMIT');
       console.log('Task created:', { task_id: (result as any).insertId, family_id: family.family_id, title });
@@ -1103,7 +1075,7 @@ app.post('/tasks', authenticate, async (req: AuthRequest, res: Response) => {
 app.patch('/tasks/:id', authenticate, async (req: AuthRequest, res: Response) => {
   const user_id = req.user!.userId;
   const task_id = parseInt(req.params.id);
-  const { title, description, assignee_id, due_date, reminder_datetime, priority, status } = req.body;
+  const { title, description, assignee_id, due_date, priority, status } = req.body;
 
   if (title && typeof title !== 'string' || title.length > 100) {
     return sendResponse(res, 400, false, null, 'Title must be a string (max 100 characters)');
@@ -1114,15 +1086,6 @@ app.patch('/tasks/:id', authenticate, async (req: AuthRequest, res: Response) =>
   if (status && !['pending', 'completed'].includes(status)) {
     return sendResponse(res, 400, false, null, 'Status must be pending or completed');
   }
-
-  function fixDatetime(dt: string | undefined): string | null {
-    if (!dt) return null;
-    const d = new Date(dt);
-    if (isNaN(d.getTime())) return null;
-    return toMysqlDatetime(d);
-  }
-  const fixed_due_date = fixDatetime(due_date);
-  const fixed_reminder_datetime = fixDatetime(reminder_datetime);
 
   try {
     const db = await initDb();
@@ -1149,9 +1112,7 @@ app.patch('/tasks/:id', authenticate, async (req: AuthRequest, res: Response) =>
     if (title) updates.title = title;
     if (description !== undefined) updates.description = description || null;
     if (assignee_id !== undefined) updates.assignee_id = assignee_id || null;
-    if (due_date !== undefined) updates.due_date = fixed_due_date || null;
-    if (reminder_datetime !== undefined) updates.reminder_datetime = fixed_reminder_datetime || null;
-    if (reminder_datetime !== undefined) updates.notified = false;
+    if (due_date !== undefined) updates.due_date = due_date || null;
     if (priority) updates.priority = priority;
     if (status) updates.status = status;
 
@@ -1256,7 +1217,8 @@ app.post('/messages', authenticate, async (req: AuthRequest, res: Response) => {
 async function startServer() {
   try {
     await initDb();
-    setInterval(checkAndSendNotifications, 60 * 1000);
+    // Start periodic notification check
+    setInterval(checkAndSendNotifications, 60 * 1000); // Run every minute
     httpServer.listen(PORT, () => {
       print(PORT);
       console.log(`Server running on http://localhost:${PORT}`);
