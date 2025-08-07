@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Toast display helper function
   async function showToast(message, duration, color) {
-    if (window.Ionic) {
+    if (window.Ionic && document.createElement("ion-toast").present) {
       const toast = document.createElement("ion-toast");
       toast.message = message;
       toast.duration = duration;
@@ -44,6 +44,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       document.body.appendChild(toast);
       await toast.present();
     } else {
+      console.warn("Ionic not loaded, falling back to alert");
       alert(message);
     }
   }
@@ -65,7 +66,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         throw new Error(data.error || "Failed to check family status");
       }
       const hasFamily = data.success && Array.isArray(data.data.families) && data.data.families.length > 0;
-      console.log("hasFamily 結果:", hasFamily);
+      console.log("hasFamily 結果:", hasFamily, "Family IDs:", data.data.families.map(f => f.id));
       return hasFamily;
     } catch (error) {
       console.error("檢查家庭狀態錯誤:", error);
@@ -118,12 +119,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // Initialize Socket.IO
-  const socket = io("http://localhost:8100", {
+  console.log("Attempting Socket.IO connection with token:", token.substring(0, 20) + "...");
+  const socket = io("https://www.mysandshome.com", {
     auth: { token }
   });
 
   socket.on("connect", () => {
-    console.log("Socket.IO 已連接到服務器");
+    console.log("Socket.IO connected successfully");
     socket.emit("join", { token });
   });
 

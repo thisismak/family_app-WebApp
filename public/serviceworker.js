@@ -1,10 +1,9 @@
-const CACHE_NAME = 'family-app-cache-v4'; // 更新版本號
+const CACHE_NAME = 'family-app-cache-v5'; // Updated version
 const urlsToCache = [
   '/index.html',
   '/styles.css',
   '/client.js',
-  '/assets/icon/favicon.png',
-  // 其他需要緩存的資源
+  '/assets/family-logo.png', // Replaced favicon.png with an existing file
 ];
 
 self.addEventListener('install', event => {
@@ -13,8 +12,9 @@ self.addEventListener('install', event => {
       .then(cache => cache.addAll(urlsToCache))
       .then(() => {
         console.log(`Service Worker installed with cache: ${CACHE_NAME}`);
-        return self.skipWaiting(); // 立即進入等待狀態
+        return self.skipWaiting();
       })
+      .catch(err => console.error('Cache addAll failed:', err))
   );
 });
 
@@ -32,7 +32,7 @@ self.addEventListener('activate', event => {
       )
     ).then(() => {
       console.log(`Service Worker activated: ${CACHE_NAME}`);
-      return self.clients.claim(); // 立即控制所有頁面
+      return self.clients.claim();
     })
   );
 });
