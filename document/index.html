@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>S&S Family App - Login</title>
+    <!-- 備注：引入 Ionic 框架用於構建移動端友好的 UI，支援模組化和非模組化載入 -->
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/dist/ionic/ionic.esm.js"></script>
+    <script nomodule src="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/dist/ionic/ionic.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/css/ionic.bundle.min.css" />
+    <!-- 備注：自定義樣式表和 Google 字體用於增強視覺設計 -->
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="manifest" href="/manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <!-- 備注：ion-app 是 Ionic 的根元件，提供應用程式結構 -->
+    <ion-app>
+      <!-- 備注：側邊選單，與主頁面內容通過 content-id="main-content" 關聯 -->
+      <ion-menu content-id="main-content" side="start">
+        <ion-header>
+          <ion-toolbar>
+            <ion-title>Menu</ion-title>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content>
+          <ion-list>
+            <!-- 備注：導航項目，點擊後通過 JavaScript 處理跳轉到相應頁面 -->
+            <ion-item id="nav-dashboard"><ion-icon name="home-outline"></ion-icon>Dashboard</ion-item>
+            <ion-item id="nav-calendar"><ion-icon name="calendar-outline"></ion-icon>Calendar</ion-item>
+            <ion-item id="nav-tasks"><ion-icon name="checkbox-outline"></ion-icon>Tasks</ion-item>
+            <ion-item id="nav-chat"><ion-icon name="chatbubble-outline"></ion-icon>Chat</ion-item>
+            <ion-item id="nav-family"><ion-icon name="people-outline"></ion-icon>Family</ion-item>
+            <ion-item id="signOut"><ion-icon name="log-out-outline"></ion-icon>Sign Out</ion-item>
+          </ion-list>
+        </ion-content>
+      </ion-menu>
+      <!-- 備注：主頁面內容區域，與側邊選單通過 id="main-content" 關聯 -->
+      <div class="ion-page" id="main-content">
+        <ion-header>
+          <ion-toolbar>
+            <ion-buttons slot="start">
+              <ion-menu-button></ion-menu-button>
+            </ion-buttons>
+            <ion-title>S&S Family App</ion-title>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content class="ion-padding">
+          <img src="/assets/family-logo.png" alt="Family Logo" class="family-logo" />
+          <div class="welcome-message">
+            <h2>Welcome, <span id="welcomeUsername">Guest</span>!</h2>
+            <p>Connect with your family, plan events, and share moments.</p>
+          </div>
+          <!-- 備注：快速操作卡片，提供導航到日曆、任務、聊天和家庭管理的按鈕 -->
+          <ion-card>
+            <ion-card-header>
+              <ion-card-title>Quick Actions</ion-card-title>
+            </ion-card-header>
+            <ion-card-content>
+              <ion-grid>
+                <ion-row>
+                  <ion-col size="12" size-md="6">
+                    <ion-button expand="block" id="btn-calendar">
+                      <ion-icon name="calendar-outline" slot="start"></ion-icon>
+                      View Calendar
+                    </ion-button>
+                  </ion-col>
+                  <ion-col size="12" size-md="6">
+                    <ion-button expand="block" id="btn-tasks">
+                      <ion-icon name="checkbox-outline" slot="start"></ion-icon>
+                      Manage Tasks
+                    </ion-button>
+                  </ion-col>
+                  <ion-col size="12" size-md="6">
+                    <ion-button expand="block" id="btn-chat">
+                      <ion-icon name="chatbubble-outline" slot="start"></ion-icon>
+                      Family Chat
+                    </ion-button>
+                  </ion-col>
+                  <ion-col size="12" size-md="6">
+                    <ion-button expand="block" id="btn-family">
+                      <ion-icon name="people-outline" slot="start"></ion-icon>
+                      Manage Family
+                    </ion-button>
+                  </ion-col>
+                </ion-row>
+              </ion-grid>
+            </ion-card-content>
+          </ion-card>
+          <!-- 備注：浮動操作按鈕，提供快速添加日曆、任務或聊天的入口 -->
+          <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+            <ion-fab-button color="primary">
+              <ion-icon name="add-outline"></ion-icon>
+            </ion-fab-button>
+            <ion-fab-list side="top">
+              <ion-fab-button id="fab-calendar" color="light"><ion-icon name="calendar-outline"></ion-icon></ion-fab-button>
+              <ion-fab-button id="fab-tasks" color="light"><ion-icon name="checkbox-outline"></ion-icon></ion-fab-button>
+              <ion-fab-button id="fab-chat" color="light"><ion-icon name="chatbubble-outline"></ion-icon></ion-fab-button>
+            </ion-fab-list>
+          </ion-fab>
+        </ion-content>
+        <ion-footer>
+          <ion-toolbar>
+            <ion-title size="small" class="ion-text-center">
+              © 2025 S&S Family App. All rights reserved.
+            </ion-title>
+          </ion-toolbar>
+        </ion-footer>
+      </div>
+    </ion-app>
+
+    <script>
+      // 備注：主頁面邏輯，負責檢查用戶身份驗證、導航和用戶資訊顯示
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM loaded for index.html");
+        console.log("Ionic version:", window.Ionic?.version || "Not loaded");
+        // 備注：檢查本地儲存中的 token，若無則跳轉到 login.html
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.log("No token found, redirecting to /login.html");
+          window.location.href = "/login.html";
+          return;
+        }
+
+        // 備注：定義側邊選單的導航項目與對應頁面的映射
+        const navItems = {
+          "nav-dashboard": "/index.html",
+          "nav-calendar": "/calendar.html",
+          "nav-tasks": "/tasks.html",
+          "nav-chat": "/chat.html",
+          "nav-family": "/family.html",
+        };
+        Object.keys(navItems).forEach((id) => {
+          const item = document.getElementById(id);
+          item.addEventListener("click", () => {
+            const url = navItems[id];
+            console.log(`Navigating to ${url}`);
+            window.location.href = url;
+          });
+        });
+
+        // 備注：定義快速操作按鈕和浮動按鈕的導航映射
+        const buttonNav = {
+          "btn-calendar": "/calendar.html",
+          "btn-tasks": "/tasks.html",
+          "btn-chat": "/chat.html",
+          "btn-family": "/family.html",
+          "fab-calendar": "/calendar.html",
+          "fab-tasks": "/tasks.html",
+          "fab-chat": "/chat.html",
+        };
+        Object.keys(buttonNav).forEach((id) => {
+          const button = document.getElementById(id);
+          button.addEventListener("click", () => {
+            const url = buttonNav[id];
+            console.log(`Button clicked, navigating to ${url}`);
+            window.location.href = url;
+          });
+        });
+
+        // 備注：登出功能，清除 token 並跳轉到 login.html
+        document.getElementById("signOut").addEventListener("click", () => {
+          console.log("Sign out clicked");
+          localStorage.removeItem("token");
+          console.log("Logged out, cleared token");
+          window.location.href = "/login.html";
+        });
+
+        // 備注：從後端獲取用戶資訊，與 server.ts 的 /user 路由交互
+        async function fetchUser() {
+          try {
+            console.log("Fetching user info");
+            const response = await fetch("/user", {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+              },
+            });
+            const data = await response.json();
+            console.log("Fetch user response:", data);
+            if (!response.ok) {
+              throw new Error(data.error || "Failed to fetch user data");
+            }
+            return {
+              username: data.username || "Guest",
+              email: data.email || "No email",
+            };
+          } catch (err) {
+            console.error("Error fetching user:", err);
+            localStorage.removeItem("token");
+            window.location.href = "/login.html";
+            return { username: "Guest", email: "Not logged in" };
+          }
+        }
+
+        // 備注：更新歡迎訊息，顯示用戶名稱
+        async function updateWelcomeMessage() {
+          try {
+            const user = await fetchUser();
+            document.getElementById("welcomeUsername").textContent = user.username;
+          } catch (err) {
+            document.getElementById("welcomeUsername").textContent = "Guest";
+          }
+        }
+
+        updateWelcomeMessage();
+      });
+    </script>
+    <script>
+      // 備注：註冊 Service Worker 以支援離線功能和推送通知，與 server.ts 的 /subscribe 路由相關
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/serviceworker.js')
+            .then(reg => console.log('Service Worker registered'))
+            .catch(err => console.error('Service Worker registration failed:', err));
+        });
+      }
+    </script>
+  </body>
+</html>

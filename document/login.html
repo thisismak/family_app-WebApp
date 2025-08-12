@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>S&S Family App - Login</title>
+    <!-- 備注：引入 Ionic 框架（版本 7.8.4）用於構建登入頁面的 UI -->
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core@7.8.4/dist/ionic/ionic.esm.js"></script>
+    <script nomodule src="https://cdn.jsdelivr.net/npm/@ionic/core@7.8.4/dist/ionic/ionic.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ionic/core@7.8.4/css/ionic.bundle.min.css" />
+    <!-- 備注：自定義樣式表和 Google 字體用於視覺設計，manifest.json 支援 PWA -->
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="manifest" href="/manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+    <style>
+      /* 備注：隱藏 spinner 的樣式，確保不顯示時完全不可見 */
+      ion-spinner[hidden] {
+        display: none !important;
+      }
+      /* 備注：錯誤訊息樣式，用於顯示驗證失敗的提示 */
+      .error {
+        color: var(--ion-color-danger, #ff0000);
+        font-size: 12px;
+        margin-top: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 備注：ion-app 是 Ionic 的根元件，提供登入頁面結構 -->
+    <ion-app>
+      <ion-content class="ion-padding">
+        <img src="/assets/family-logo.png" alt="Family Logo" class="family-logo" />
+        <!-- 備注：登入表單卡片，包含用戶名和密碼輸入框 -->
+        <ion-card>
+          <ion-card-header>
+            <ion-card-title>Login</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <form id="login_form">
+              <ion-list>
+                <ion-item>
+                  <ion-input id="username" name="username" type="text" label="Username" required clear-input></ion-input>
+                  <div id="username_error" class="error" hidden>Username is required</div>
+                </ion-item>
+                <ion-item>
+                  <ion-input id="password" name="password" type="password" label="Password" required clear-input></ion-input>
+                  <div id="password_error" class="error" hidden>Password is required</div>
+                  <ion-icon id="togglePassword" name="eye-outline" slot="end"></ion-icon>
+                </ion-item>
+              </ion-list>
+              <ion-button id="login_button" expand="block" type="submit">
+                Login
+                <ion-spinner name="crescent" hidden></ion-spinner>
+              </ion-button>
+              <!-- 備注：提供註冊和忘記密碼的鏈接，跳轉到對應頁面 -->
+              <p class="ion-text-center">
+                Don't have an account? <a href="/register.html">Register</a> | 
+                <a href="/forgot-password.html">Forgot Password?</a>
+              </p>
+            </form>
+          </ion-card-content>
+        </ion-card>
+      </ion-content>
+    </ion-app>
+
+    <script>
+      // 備注：登入頁面邏輯，處理表單驗證、密碼可見性切換和與後端 /login 路由的交互
+      document.addEventListener("DOMContentLoaded", () => {
+        console.log("DOM loaded for login.html");
+        console.log("Ionic version:", window.Ionic?.version || "Not loaded");
+
+        const loginForm = document.getElementById("login_form");
+        const usernameInput = document.getElementById("username");
+        const passwordInput = document.getElementById("password");
+        const togglePassword = document.getElementById("togglePassword");
+        const loginButton = document.getElementById("login_button");
+        const usernameError = document.getElementById("username_error");
+        const passwordError = document.getElementById("password_error");
+        let isSubmitting = false;
+
+        // 備注：根據環境動態設置 API URL，支援本地開發和線上部署
+        const API_BASE_URL = window.location.hostname === 'www.mysandshome.com'
+          ? 'https://www.mysandshome.com'
+          : 'http://localhost:8100';
+
+        // 備注：初始化表單狀態，隱藏錯誤訊息並啟用登入按鈕
+        usernameError.hidden = true;
+        passwordError.hidden = true;
+        loginButton.disabled = false;
+        console.log("Initial state:", { usernameError: usernameError.hidden, passwordError: passwordError.hidden, loginButtonDisabled: loginButton.disabled });
+
+        // 備注：顯示提示訊息的輔助函數，使用 Ionic toast 元件
+        async function showToast(message, duration, color) {
+          console.log(`Showing toast: ${message}`);
+          try {
+            const toast = document.createElement("ion-toast");
+            toast.message = message;
+            toast.duration = duration;
+            toast.color = color;
+            document.body.appendChild(toast);
+            await toast.present();
+            await toast.onDidDismiss();
+            console.log(`Toast dismissed: ${message}`);
+          } catch (error) {
+            console.error("Toast error:", error);
+            alert(message);
+          }
+        }
+
+        // 備注：監聽用戶名輸入，實時驗證並更新錯誤訊息
+        usernameInput?.addEventListener("ionInput", (e) => {
+          const value = e.target.value?.trim() || "";
+          usernameError.hidden = value.length > 0;
+          console.log("Username input:", { value, length: value.length, valid: usernameError.hidden });
+          updateButtonState();
+        });
+
+        // 備注：監聽密碼輸入，實時驗證並更新錯誤訊息
+        passwordInput?.addEventListener("ionInput", (e) => {
+          const value = e.target.value?.trim() || "";
+          passwordError.hidden = value.length > 0;
+          console.log("Password input:", { value, length: value.length, valid: passwordError.hidden });
+          updateButtonState();
+        });
+
+        // 備注：更新登入按鈕狀態，確保用戶名和密碼有效時啟用
+        function updateButtonState() {
+          const usernameValid = usernameInput.value.trim().length > 0;
+          const passwordValid = passwordInput.value.trim().length > 0;
+          loginButton.disabled = !(usernameValid && passwordValid);
+          console.log("Button state updated:", { usernameValid, passwordValid, disabled: loginButton.disabled });
+        }
+
+        // 備注：切換密碼輸入框的可見性（顯示/隱藏密碼）
+        togglePassword?.addEventListener("click", () => {
+          const type = passwordInput.type === "password" ? "text" : "password";
+          passwordInput.type = type;
+          togglePassword.name = type === "password" ? "eye-outline" : "eye-off-outline";
+          console.log("Toggled password visibility:", { type });
+        });
+
+        // 備注：處理表單提交，與 server.ts 的 /login 路由交互
+        loginForm?.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          if (isSubmitting) {
+            console.log("Form submission blocked: Already submitting");
+            return;
+          }
+
+          console.log("Form submission started");
+          isSubmitting = true;
+          const formData = new FormData(loginForm);
+          const username = formData.get("username")?.toString().trim();
+          const password = formData.get("password")?.toString().trim();
+
+          console.log("Login attempt:", { username, passwordLength: password?.length });
+
+          if (!username || !password) {
+            console.log("Validation failed: Username or password missing");
+            await showToast("Username and password are required", 2000, "danger");
+            isSubmitting = false;
+            return;
+          }
+
+          loginButton.disabled = true;
+          const spinner = loginButton.querySelector("ion-spinner");
+          spinner.hidden = false;
+          console.log("Spinner shown");
+
+          try {
+            const loginUrl = `${API_BASE_URL}/login`;
+            console.log("Sending login request to:", loginUrl);
+            const response = await fetch(loginUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ username, password }),
+            });
+
+            console.log("Response received:", {
+              status: response.status,
+              statusText: response.statusText,
+              ok: response.ok,
+            });
+
+            const data = await response.json();
+            console.log("Response data:", data);
+
+            if (!data.success) {
+              throw new Error(data.error || "Login failed");
+            }
+
+            const token = data.data.token;
+            console.log("Token received:", { tokenLength: token.length });
+
+            sessionStorage.setItem("token", token);
+            localStorage.removeItem("token");
+            console.log("Token stored in sessionStorage");
+
+            await showToast("Login Successful", 2000, "success");
+            console.log("Redirecting to /family.html");
+            window.location.href = "/family.html";
+          } catch (error) {
+            console.error("Login error:", { message: error.message, stack: error.stack });
+            await showToast(`Failed to login: ${error.message}`, 2000, "danger");
+          } finally {
+            console.log("Finalizing login attempt");
+            isSubmitting = false;
+            loginButton.disabled = false;
+            spinner.hidden = true;
+            setTimeout(() => {
+              if (!spinner.hidden) {
+                console.warn("Spinner still visible, forcing hide");
+                spinner.hidden = true;
+                spinner.style.display = 'none';
+              }
+            }, 100);
+          }
+        });
+      });
+    </script>
+    <script>
+      // 備注：註冊 Service Worker，支援離線功能和推送通知，與 server.ts 的 /subscribe 路由相關
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/serviceworker.js')
+            .then(reg => console.log('Service Worker registered'))
+            .catch(err => console.error('Service Worker registration failed:', err));
+        });
+      }
+    </script>
+  </body>
+</html>
