@@ -332,8 +332,8 @@ async function checkAndSendNotifications() {
       );
 
       const payload = {
-        title: `🔔Get Ready for ${event.title}!🔔`,
-        body: `🎉Your fun event "${event.title}" starts at ${new Date(event.reminder_datetime).toLocaleTimeString()}!🎉`
+        title: `❤️ ${event.title} ❤️`,
+        body: `⏰ Start time at ${new Date(event.reminder_datetime).toLocaleTimeString()} ⏰`
       };
 
       // Send notification to each subscription
