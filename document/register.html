@@ -1,0 +1,197 @@
+<!DOCTYPE html>  <!-- HTML5 文件類型 -->
+<html lang="en">  <!-- 語言設定 -->
+  <head>
+    <meta charset="UTF-8" />  <!-- 字符編碼 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />  <!-- 響應式視口 -->
+    <title>S&S Family App - Register</title>  <!-- 標題 -->
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/dist/ionic/ionic.esm.js"></script>  <!-- Ionic ES Module -->
+    <script nomodule src="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/dist/ionic/ionic.js"></script>  <!-- Ionic 非模塊 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ionic/core@7.2.1/css/ionic.bundle.min.css" />  <!-- Ionic 樣式 -->
+    <link rel="stylesheet" href="/styles.css" />  <!-- 自訂樣式 -->
+    <link rel="manifest" href="/manifest.json">  <!-- PWA Manifest -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />  <!-- 字體 -->
+  </head>
+  <body>
+    <ion-app>
+      <ion-content class="ion-padding">
+        <img src="/assets/family-logo.png" alt="Family Logo" class="family-logo" />
+        <ion-card>  <!-- 註冊卡片 -->
+          <ion-card-header>
+            <ion-card-title>Register</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <form id="register_form">  <!-- 註冊表單 -->
+              <ion-list>
+                <ion-item>
+                  <ion-label position="floating">Username</ion-label>
+                  <ion-input id="username" name="username" type="text" required></ion-input>  <!-- 用戶名輸入 -->
+                  <div id="username_error" class="error" hidden>Username must be 3-32 characters</div>
+                </ion-item>
+                <ion-item>
+                  <ion-label position="floating">Email</ion-label>
+                  <ion-input id="email" name="email" type="email"></ion-input>  <!-- 電子郵件輸入 -->
+                  <div id="email_error" class="error" hidden>Please enter a valid email</div>
+                </ion-item>
+                <ion-item>
+                  <ion-label position="floating">Password</ion-label>
+                  <ion-input id="password" name="password" type="password" required></ion-input>  <!-- 密碼輸入 -->
+                  <div id="password_error" class="error" hidden>Password must be at least 6 characters</div>
+                  <ion-icon id="togglePassword" name="eye-outline" slot="end"></ion-icon>  <!-- 切換可見性 -->
+                </ion-item>
+              </ion-list>
+              <ion-button expand="block" type="submit">Register</ion-button>  <!-- 註冊按鈕 -->
+              <p class="ion-text-center">
+                Already have an account? <a href="/login.html">Login</a>  <!-- 登入連結 -->
+              </p>
+            </form>
+          </ion-card-content>
+        </ion-card>
+      </ion-content>
+    </ion-app>
+
+    <script>  <!-- 腳本：處理註冊邏輯 -->
+      document.addEventListener("DOMContentLoaded", () => {
+        console.log("DOM loaded for register.html");
+        console.log("Ionic version:", window.Ionic?.version || "Not loaded");
+
+        // Menu navigation  // 選單導航（註冊頁可能無完整選單）
+        const navItems = {
+          "nav-login": "/login.html",
+          "nav-register": "/register.html",
+        };
+        Object.keys(navItems).forEach((id) => {
+          const item = document.getElementById(id);
+          if (item) {
+            item.addEventListener("click", () => {
+              console.log(`Navigating to ${navItems[id]}`);
+              window.location.href = navItems[id];
+            });
+          }
+        });
+
+        // Check for existing token  // 檢查 token：已登入則跳轉
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+        if (token) {
+          console.log("Token found, redirecting to /calendar.html");
+          window.location.href = "/calendar.html";
+          return;
+        }
+        console.log("No token found, staying on register page");
+
+        const registerForm = document.getElementById("register_form");
+        const usernameInput = document.getElementById("username");
+        const passwordInput = document.getElementById("password");
+        const emailInput = document.getElementById("email");
+        const togglePassword = document.getElementById("togglePassword");
+        const usernameError = document.getElementById("username_error");
+        const passwordError = document.getElementById("password_error");
+        const emailError = document.getElementById("email_error");
+
+        // Input validation with visual feedback  // 輸入驗證：即時更新錯誤訊息
+        usernameInput?.addEventListener("input", () => {
+          const username = usernameInput.value.trim();
+          if (username.length < 3 || username.length > 32) {
+            usernameInput.setCustomValidity("Username must be 3-32 characters.");
+            usernameError.hidden = false;
+          } else {
+            usernameInput.setCustomValidity("");
+            usernameError.hidden = true;
+          }
+        });
+
+        passwordInput?.addEventListener("input", () => {
+          const password = passwordInput.value;
+          if (password.length < 6) {
+            passwordInput.setCustomValidity("Password must be at least 6 characters.");
+            passwordError.hidden = false;
+          } else {
+            passwordInput.setCustomValidity("");
+            passwordError.hidden = true;
+          }
+        });
+
+        emailInput?.addEventListener("input", () => {
+          const email = emailInput.value.trim();
+          if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            emailInput.setCustomValidity("Please enter a valid email.");
+            emailError.hidden = false;
+          } else {
+            emailInput.setCustomValidity("");
+            emailError.hidden = true;
+          }
+        });
+
+        // Toggle password visibility  // 切換密碼可見性
+        togglePassword?.addEventListener("click", () => {
+          const type = passwordInput.type === "password" ? "text" : "password";
+          passwordInput.type = type;
+          togglePassword.name = type === "password" ? "eye-outline" : "eye-off-outline";
+        });
+
+        // Form submission  // 表單提交：驗證並發送 /register 請求
+        registerForm?.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          console.log("Form submitted");
+          const formData = new FormData(registerForm);
+          const username = formData.get("username")?.toString().trim();
+          const email = formData.get("email")?.toString().trim() || null;
+          const password = formData.get("password")?.toString().trim();
+
+          // Additional validation before sending
+          if (!username || !password) {
+            const toast = document.createElement("ion-toast");
+            toast.message = "Username and password are required";
+            toast.duration = 2000;
+            toast.color = "danger";
+            document.body.appendChild(toast);
+            await toast.present();
+            return;
+          }
+
+          console.log("Register attempt:", { username, email });
+
+          try {
+            const response = await fetch("/register", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ username, email, password }),
+            });
+            const data = await response.json();
+            console.log("Register response:", data);
+
+            if (!data.success) {
+              throw new Error(data.error || "Registration failed");
+            }
+
+            const toast = document.createElement("ion-toast");
+            toast.message = "Registration Successful";
+            toast.duration = 2000;
+            toast.color = "success";
+            document.body.appendChild(toast);
+            await toast.present();
+
+            console.log("Redirecting to /login.html");
+            window.location.href = "/login.html";
+          } catch (error) {
+            console.error("Register error:", error.message);
+            const toast = document.createElement("ion-toast");
+            toast.message = `Failed to register: ${error.message}`;
+            toast.duration = 2000;
+            toast.color = "danger";
+            document.body.appendChild(toast);
+            await toast.present();
+          }
+        });
+      });
+    </script>
+    <script>  // 註冊 Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/serviceworker.js')
+        .then(reg => console.log('Service Worker registered'))
+        .catch(err => console.error('Service Worker registration failed:', err));
+    });
+  }
+</script>
+  </body>
+</html>

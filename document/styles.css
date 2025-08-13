@@ -1,0 +1,125 @@
+:root {  /* 根變數：定義顏色、字體和陰影，用於全局樣式一致性 */
+  --primary-pink: #FFC1CC; /* Soft pink for buttons and highlights */  /* 按鈕和高亮顏色 */
+  --light-pink: #FFE4E1; /* Backgrounds and cards */  /* 背景和卡片顏色 */
+  --dark-pink: #FF8A9B; /* Toolbar and accents */  /* 工具欄和強調顏色 */
+  --text-dark: #333333; /* Main text color */  /* 主要文字顏色 */
+  --text-light: #FFFFFF; /* Text on dark backgrounds */  /* 深色背景文字 */
+  --family-font: 'Poppins', sans-serif; /* Playful, family-friendly font */  /* 字體家族 */
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */  /* 陰影效果 */
+}
+
+body {  /* 身體樣式：設定字體和背景 */
+  font-family: var(--family-font);
+  background: var(--light-pink);
+}
+
+ion-app {  /* Ionic App 樣式：背景顏色 */
+  --background: var(--light-pink);
+}
+
+ion-toolbar {  /* 工具欄樣式：背景、顏色和圓角 */
+  --background: var(--dark-pink);
+  --color: var(--text-light);
+  --border-radius: 8px;
+}
+
+ion-content {  /* 內容區域樣式：背景和溢出處理 */
+  --background: var(--light-pink);
+  --overflow: auto;
+}
+
+ion-card {  /* 卡片樣式：背景、圓角、陰影和過渡效果 */
+  background: var(--text-light);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  margin: 16px auto;
+  max-width: 600px;
+  transition: transform 0.3s ease;
+}
+
+ion-card:hover {  /* 卡片懸停效果：上移 */
+  transform: translateY(-4px);
+}
+
+ion-button {  /* 按鈕樣式：背景、顏色、圓角和過渡 */
+  --background: var(--primary-pink);
+  --color: var(--text-dark);
+  --border-radius: 12px;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  font-weight: 600;
+  text-transform: none;
+  transition: background 0.3s ease;
+}
+
+ion-button:hover {  /* 按鈕懸停效果：改變顏色 */
+  --background: var(--dark-pink);
+  --color: var(--text-light);
+}
+
+ion-menu {  /* 選單樣式：背景和顏色 */
+  --background: var(--text-light);
+  --color: var(--text-dark);
+}
+
+ion-menu ion-item {  /* 選單項目樣式：背景、顏色、字體和圓角 */
+  --background: var(--text-light);
+  --color: var(--text-dark);
+  --background-activated: var(--primary-pink);
+  --color-activated: var(--text-dark);
+  font-size: 16px;
+  border-radius: 8px;
+  margin: 8px;
+}
+
+ion-icon {  /* 圖示樣式：右邊距 */
+  margin-right: 8px;
+}
+
+.family-logo {  /* 標誌樣式：居中顯示和大小 */
+  display: block;
+  margin: 16px auto;
+  width: 100px;
+  height: auto;
+}
+
+.welcome-message {  /* 歡迎訊息樣式：居中、填充、漸變背景和顏色 */
+  text-align: center;
+  padding: 24px;
+  background: linear-gradient(135deg, var(--primary-pink), var(--light-pink));
+  border-radius: 12px;
+  margin: 16px;
+  color: var(--text-dark);
+}
+
+ion-list {  /* 清單樣式：最大高度和滾動 */
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+ion-label {  /* 標籤樣式：允許換行 */
+  white-space: normal !important;
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 768px) {  /* 媒體查詢：小螢幕調整 */
+  ion-card {
+    max-width: 90%;
+  }
+  ion-menu ion-item {
+    font-size: 14px;
+  }
+  .welcome-message {
+    padding: 16px;
+  }
+  ion-avatar {
+    width: 32px;
+    height: 32px;
+    margin-right: 4px;
+  }
+  ion-button[slot="end"] {
+    margin-left: 4px;
+    --padding-start: 8px;
+    --padding-end: 8px;
+  }
+}

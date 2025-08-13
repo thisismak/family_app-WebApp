@@ -1,0 +1,20 @@
+{  // PWA Manifest 文件：定義應用程式安裝屬性
+  "name": "Family App",  // 應用程式名稱
+  "short_name": "FamilyApp",  // 短名稱，用於桌面圖示
+  "start_url": "/",  // 啟動 URL
+  "display": "standalone",  // 顯示模式：獨立應用程式（無瀏覽器 UI）
+  "background_color": "#FFE4E1",  // 背景顏色
+  "theme_color": "#FF8A9B",  // 主題顏色
+  "icons": [  // 圖示陣列
+    {
+      "src": "/assets/icon-192x192.png",  // 192x192 圖示
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/icon-512x512.png",  // 512x512 圖示
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
