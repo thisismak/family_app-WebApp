@@ -10,7 +10,8 @@
     <link rel="stylesheet" href="/styles.css" />  <!-- 自訂樣式 -->
     <link rel="manifest" href="/manifest.json">  <!-- PWA Manifest -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />  <!-- 字體 -->
-    <style>  <!-- 自訂 CSS：隱藏 spinner 和錯誤樣式 -->
+    <!-- 自訂 CSS：隱藏 spinner 和錯誤樣式 -->
+    <style>  
       ion-spinner[hidden] {
         display: none !important;
       }
@@ -57,166 +58,207 @@
     </ion-app>
 
     <script>  <!-- 腳本：處理登入邏輯 -->
-      document.addEventListener("DOMContentLoaded", () => {
-        console.log("DOM loaded for login.html");
-        console.log("Ionic version:", window.Ionic?.version || "Not loaded");
+  // 備注：監聽 DOM 載入完成事件，初始化登入頁面邏輯
+  document.addEventListener("DOMContentLoaded", () => {
+    // 備注：輸出 DOM 載入完成訊息以及 Ionic 版本資訊
+    console.log("DOM loaded for login.html");
+    console.log("Ionic version:", window.Ionic?.version || "Not loaded");
 
-        const loginForm = document.getElementById("login_form");
-        const usernameInput = document.getElementById("username");
-        const passwordInput = document.getElementById("password");
-        const togglePassword = document.getElementById("togglePassword");
-        const loginButton = document.getElementById("login_button");
-        const usernameError = document.getElementById("username_error");
-        const passwordError = document.getElementById("password_error");
-        let isSubmitting = false;
+    // 備注：獲取表單和輸入框的 DOM 元素
+    const loginForm = document.getElementById("login_form");
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
+    const togglePassword = document.getElementById("togglePassword");
+    const loginButton = document.getElementById("login_button");
+    const usernameError = document.getElementById("username_error");
+    const passwordError = document.getElementById("password_error");
+    // 備注：用於防止表單重複提交的標誌
+    let isSubmitting = false;
 
-        // 動態 API URL
-        const API_BASE_URL = window.location.hostname === 'www.mysandshome.com'
-          ? 'https://www.mysandshome.com'
-          : 'http://localhost:8100';
+    // 備注：根據運行環境動態設置 API 基礎 URL
+    const API_BASE_URL = window.location.hostname === 'www.mysandshome.com'
+      ? 'https://www.mysandshome.com'
+      : 'http://localhost:8100';
 
-        // 初始化錯誤訊息和按鈕狀態
-        usernameError.hidden = true;
-        passwordError.hidden = true;
-        loginButton.disabled = false;
-        console.log("Initial state:", { usernameError: usernameError.hidden, passwordError: passwordError.hidden, loginButtonDisabled: loginButton.disabled });
+    // 備注：初始化錯誤訊息隱藏狀態和登入按鈕啟用狀態
+    usernameError.hidden = true;
+    passwordError.hidden = true;
+    loginButton.disabled = false;
+    // 備注：記錄初始狀態至控制台
+    console.log("Initial state:", { usernameError: usernameError.hidden, passwordError: passwordError.hidden, loginButtonDisabled: loginButton.disabled });
 
-        // Toast 顯示輔助函數
-        async function showToast(message, duration, color) {
-          console.log(`Showing toast: ${message}`);
-          try {
-            const toast = document.createElement("ion-toast");
-            toast.message = message;
-            toast.duration = duration;
-            toast.color = color;
-            document.body.appendChild(toast);
-            await toast.present();
-            await toast.onDidDismiss();
-            console.log(`Toast dismissed: ${message}`);
-          } catch (error) {
-            console.error("Toast error:", error);
-            alert(message);
-          }
-        }
-
-        // 輸入驗證
-        usernameInput?.addEventListener("ionInput", (e) => {
-          const value = e.target.value?.trim() || "";
-          usernameError.hidden = value.length > 0;
-          console.log("Username input:", { value, length: value.length, valid: usernameError.hidden });
-          updateButtonState();
-        });
-
-        passwordInput?.addEventListener("ionInput", (e) => {
-          const value = e.target.value?.trim() || "";
-          passwordError.hidden = value.length > 0;
-          console.log("Password input:", { value, length: value.length, valid: passwordError.hidden });
-          updateButtonState();
-        });
-
-        // 更新按鈕狀態
-        function updateButtonState() {
-          const usernameValid = usernameInput.value.trim().length > 0;
-          const passwordValid = passwordInput.value.trim().length > 0;
-          loginButton.disabled = !(usernameValid && passwordValid);
-          console.log("Button state updated:", { usernameValid, passwordValid, disabled: loginButton.disabled });
-        }
-
-        // 切換密碼可見性
-        togglePassword?.addEventListener("click", () => {
-          const type = passwordInput.type === "password" ? "text" : "password";
-          passwordInput.type = type;
-          togglePassword.name = type === "password" ? "eye-outline" : "eye-off-outline";
-          console.log("Toggled password visibility:", { type });
-        });
-
-        // 表單提交
-        loginForm?.addEventListener("submit", async (event) => {
-          event.preventDefault();
-          if (isSubmitting) {
-            console.log("Form submission blocked: Already submitting");
-            return;
-          }
-
-          console.log("Form submission started");
-          isSubmitting = true;
-          const formData = new FormData(loginForm);
-          const username = formData.get("username")?.toString().trim();
-          const password = formData.get("password")?.toString().trim();
-
-          console.log("Login attempt:", { username, passwordLength: password?.length });
-
-          if (!username || !password) {
-            console.log("Validation failed: Username or password missing");
-            await showToast("Username and password are required", 2000, "danger");
-            isSubmitting = false;
-            return;
-          }
-
-          loginButton.disabled = true;
-          const spinner = loginButton.querySelector("ion-spinner");
-          spinner.hidden = false;
-          console.log("Spinner shown");
-
-          try {
-            const loginUrl = `${API_BASE_URL}/login`;
-            console.log("Sending login request to:", loginUrl);
-            const response = await fetch(loginUrl, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ username, password }),
-            });
-
-            console.log("Response received:", {
-              status: response.status,
-              statusText: response.statusText,
-              ok: response.ok,
-            });
-
-            const data = await response.json();
-            console.log("Response data:", data);
-
-            if (!data.success) {
-              throw new Error(data.error || "Login failed");
-            }
-
-            const token = data.data.token;
-            console.log("Token received:", { tokenLength: token.length });
-
-            sessionStorage.setItem("token", token);
-            localStorage.removeItem("token");
-            console.log("Token stored in sessionStorage");
-
-            await showToast("Login Successful", 2000, "success");
-            console.log("Redirecting to /family.html");
-            window.location.href = "/family.html";
-          } catch (error) {
-            console.error("Login error:", { message: error.message, stack: error.stack });
-            await showToast(`Failed to login: ${error.message}`, 2000, "danger");
-          } finally {
-            console.log("Finalizing login attempt");
-            isSubmitting = false;
-            loginButton.disabled = false;
-            spinner.hidden = true;
-            setTimeout(() => {
-              if (!spinner.hidden) {
-                console.warn("Spinner still visible, forcing hide");
-                spinner.hidden = true;
-                spinner.style.display = 'none';
-              }
-            }, 100);
-          }
-        });
-      });
-    </script>
-    <script>  // 註冊 Service Worker
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/serviceworker.js')
-            .then(reg => console.log('Service Worker registered'))
-            .catch(err => console.error('Service Worker registration failed:', err));
-        });
+    // 備注：定義顯示 Toast 通知的輔助函數
+    async function showToast(message, duration, color) {
+      // 備注：輸出將要顯示的 Toast 訊息
+      console.log(`Showing toast: ${message}`);
+      try {
+        // 備注：創建並配置 Ionic Toast 組件
+        const toast = document.createElement("ion-toast");
+        toast.message = message;
+        toast.duration = duration;
+        toast.color = color;
+        document.body.appendChild(toast);
+        // 備注：顯示 Toast 並等待其關閉
+        await toast.present();
+        await toast.onDidDismiss();
+        console.log(`Toast dismissed: ${message}`);
+      } catch (error) {
+        // 備注：處理 Toast 顯示錯誤，退回到 alert 提示
+        console.error("Toast error:", error);
+        alert(message);
       }
-    </script>
+    }
+
+    // 備注：為用戶名輸入框添加輸入事件監聽器，進行即時驗證
+    usernameInput?.addEventListener("ionInput", (e) => {
+      const value = e.target.value?.trim() || "";
+      // 備注：根據用戶名是否為空控制錯誤訊息顯示
+      usernameError.hidden = value.length > 0;
+      console.log("Username input:", { value, length: value.length, valid: usernameError.hidden });
+      // 備注：更新登入按鈕狀態
+      updateButtonState();
+    });
+
+    // 備注：為密碼輸入框添加輸入事件監聽器，進行即時驗證
+    passwordInput?.addEventListener("ionInput", (e) => {
+      const value = e.target.value?.trim() || "";
+      // 備注：根據密碼是否為空控制錯誤訊息顯示
+      passwordError.hidden = value.length > 0;
+      console.log("Password input:", { value, length: value.length, valid: passwordError.hidden });
+      // 備注：更新登入按鈕狀態
+      updateButtonState();
+    });
+
+    // 備注：定義更新登入按鈕狀態的函數
+    function updateButtonState() {
+      // 備注：檢查用戶名和密碼是否有效
+      const usernameValid = usernameInput.value.trim().length > 0;
+      const passwordValid = passwordInput.value.trim().length > 0;
+      // 備注：僅當用戶名和密碼都有效時啟用按鈕
+      loginButton.disabled = !(usernameValid && passwordValid);
+      console.log("Button state updated:", { usernameValid, passwordValid, disabled: loginButton.disabled });
+    }
+
+    // 備注：為切換密碼可見性的按鈕添加點擊事件
+    togglePassword?.addEventListener("click", () => {
+      // 備注：切換密碼輸入框的類型（密碼/文字）
+      const type = passwordInput.type === "password" ? "text" : "password";
+      passwordInput.type = type;
+      // 備注：更新切換按鈕的圖標
+      togglePassword.name = type === "password" ? "eye-outline" : "eye-off-outline";
+      console.log("Toggled password visibility:", { type });
+    });
+
+    // 備注：為表單添加提交事件監聽器
+    loginForm?.addEventListener("submit", async (event) => {
+      // 備注：阻止表單預設提交行為
+      event.preventDefault();
+      // 備注：防止重複提交
+      if (isSubmitting) {
+        console.log("Form submission blocked: Already submitting");
+        return;
+      }
+
+      // 備注：標記表單正在提交
+      console.log("Form submission started");
+      isSubmitting = true;
+      // 備注：獲取表單數據
+      const formData = new FormData(loginForm);
+      const username = formData.get("username")?.toString().trim();
+      const password = formData.get("password")?.toString().trim();
+
+      // 備注：記錄登入嘗試的數據
+      console.log("Login attempt:", { username, passwordLength: password?.length });
+
+      // 備注：驗證用戶名和密碼是否為空
+      if (!username || !password) {
+        console.log("Validation failed: Username or password missing");
+        await showToast("Username and password are required", 2000, "danger");
+        isSubmitting = false;
+        return;
+      }
+
+      // 備注：禁用登入按鈕並顯示載入動畫
+      loginButton.disabled = true;
+      const spinner = loginButton.querySelector("ion-spinner");
+      spinner.hidden = false;
+      console.log("Spinner shown");
+
+      try {
+        // 備注：構造登入請求的 URL
+        const loginUrl = `${API_BASE_URL}/login`;
+        console.log("Sending login request to:", loginUrl);
+        // 備注：發送 POST 請求進行登入
+        const response = await fetch(loginUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        });
+
+        // 備注：記錄響應狀態
+        console.log("Response received:", {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok,
+        });
+
+        // 備注：解析響應數據
+        const data = await response.json();
+        console.log("Response data:", data);
+
+        // 備注：檢查登入是否成功
+        if (!data.success) {
+          throw new Error(data.error || "Login failed");
+        }
+
+        // 備注：獲取並存儲 token
+        const token = data.data.token;
+        console.log("Token received:", { tokenLength: token.length });
+
+        // 備注：將 token 存儲到 sessionStorage
+        sessionStorage.setItem("token", token);
+        localStorage.removeItem("token");
+        console.log("Token stored in sessionStorage");
+
+        // 備注：顯示登入成功提示並跳轉頁面
+        await showToast("Login Successful", 2000, "success");
+        console.log("Redirecting to /family.html");
+        window.location.href = "/family.html";
+      } catch (error) {
+        // 備注：處理登入錯誤並顯示錯誤提示
+        console.error("Login error:", { message: error.message, stack: error.stack });
+        await showToast(`Failed to login: ${error.message}`, 2000, "danger");
+      } finally {
+        // 備注：結束提交，恢復按鈕和動畫狀態
+        console.log("Finalizing login attempt");
+        isSubmitting = false;
+        loginButton.disabled = false;
+        spinner.hidden = true;
+        // 備注：確保動畫在 100ms 後隱藏
+        setTimeout(() => {
+          if (!spinner.hidden) {
+            console.warn("Spinner still visible, forcing hide");
+            spinner.hidden = true;
+            spinner.style.display = 'none';
+          }
+        }, 100);
+      }
+    });
+  });
+</script>
+<script>  // 註冊 Service Worker
+  // 備注：檢查瀏覽器是否支持 Service Worker
+  if ('serviceWorker' in navigator) {
+    // 備注：監聽窗口載入完成事件
+    window.addEventListener('load', () => {
+      // 備注：註冊 Service Worker
+      navigator.serviceWorker.register('/serviceworker.js')
+        // 備注：記錄註冊成功的訊息
+        .then(reg => console.log('Service Worker registered'))
+        // 備注：記錄註冊失敗的錯誤
+        .catch(err => console.error('Service Worker registration failed:', err));
+    });
+  }
+</script>
   </body>
 </html>
